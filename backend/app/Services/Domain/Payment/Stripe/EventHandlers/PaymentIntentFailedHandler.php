@@ -71,6 +71,7 @@ readonly class PaymentIntentFailedHandler
         $affected = $this->orderRepository->updateWhere(
             attributes: [
                 OrderDomainObjectAbstract::PAYMENT_STATUS => OrderPaymentStatus::PAYMENT_FAILED->name,
+                OrderDomainObjectAbstract::PAYMENT_PROCESSING_AT => null,
             ],
             where: [
                 OrderDomainObjectAbstract::ID => $stripePayment->getOrderId(),

@@ -6,10 +6,12 @@ use HiEvents\Enterprise\BoxOffice\Services\Domain\Payment\Stripe\EventHandlers\T
 use HiEvents\Exceptions\CannotAcceptPaymentException;
 use HiEvents\Services\Application\Handlers\Order\Payment\Stripe\DTO\StripeWebhookDTO;
 use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\AccountUpdateHandler;
+use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\ChargeDisputeHandler;
 use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\ChargeRefundUpdatedHandler;
 use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\ChargeSucceededHandler;
 use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\CustomerSubscriptionUpdatedHandler;
 use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\PaymentIntentFailedHandler;
+use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\PaymentIntentProcessingHandler;
 use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\PaymentIntentSucceededHandler;
 use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\PayoutPaidHandler;
 use HiEvents\Services\Infrastructure\Stripe\StripeConfigurationService;
@@ -28,6 +30,12 @@ class IncomingWebhookHandler
     private static array $validEvents = [
         Event::PAYMENT_INTENT_SUCCEEDED,
         Event::PAYMENT_INTENT_PAYMENT_FAILED,
+        Event::PAYMENT_INTENT_PROCESSING,
+        Event::CHARGE_DISPUTE_CREATED,
+        Event::CHARGE_DISPUTE_UPDATED,
+        Event::CHARGE_DISPUTE_CLOSED,
+        Event::CHARGE_DISPUTE_FUNDS_WITHDRAWN,
+        Event::CHARGE_DISPUTE_FUNDS_REINSTATED,
         Event::ACCOUNT_UPDATED,
         Event::REFUND_UPDATED,
         Event::REFUND_CREATED,
@@ -51,6 +59,8 @@ class IncomingWebhookHandler
         private readonly PayoutPaidHandler $payoutPaidHandler,
         private readonly TerminalReaderActionFailedHandler $terminalReaderActionFailedHandler,
         private readonly CustomerSubscriptionUpdatedHandler $customerSubscriptionUpdatedHandler,
+        private readonly PaymentIntentProcessingHandler $paymentIntentProcessingHandler,
+        private readonly ChargeDisputeHandler $chargeDisputeHandler,
         private readonly Logger $logger,
         private readonly Repository $cache,
         private readonly StripeConfigurationService $stripeConfigurationService,
@@ -95,6 +105,16 @@ class IncomingWebhookHandler
                     break;
                 case Event::PAYMENT_INTENT_PAYMENT_FAILED:
                     $this->paymentIntentFailedHandler->handleEvent($event->data->object, $event->created);
+                    break;
+                case Event::PAYMENT_INTENT_PROCESSING:
+                    $this->paymentIntentProcessingHandler->handleEvent($event->data->object);
+                    break;
+                case Event::CHARGE_DISPUTE_CREATED:
+                case Event::CHARGE_DISPUTE_UPDATED:
+                case Event::CHARGE_DISPUTE_CLOSED:
+                case Event::CHARGE_DISPUTE_FUNDS_WITHDRAWN:
+                case Event::CHARGE_DISPUTE_FUNDS_REINSTATED:
+                    $this->chargeDisputeHandler->handleEvent($event->data->object);
                     break;
                 case Event::CHARGE_SUCCEEDED:
                 case Event::CHARGE_UPDATED:

@@ -107,7 +107,10 @@ class PaymentIntentFailedHandlerTest extends TestCase
             ->shouldReceive('updateWhere')
             ->once()
             ->with(
-                [OrderDomainObjectAbstract::PAYMENT_STATUS => OrderPaymentStatus::PAYMENT_FAILED->name],
+                [
+                    OrderDomainObjectAbstract::PAYMENT_STATUS => OrderPaymentStatus::PAYMENT_FAILED->name,
+                    OrderDomainObjectAbstract::PAYMENT_PROCESSING_AT => null,
+                ],
                 [
                     OrderDomainObjectAbstract::ID => 1,
                     OrderDomainObjectAbstract::PAYMENT_STATUS => OrderPaymentStatus::AWAITING_PAYMENT->name,

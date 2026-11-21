@@ -6,10 +6,12 @@ use HiEvents\Enterprise\BoxOffice\Services\Domain\Payment\Stripe\EventHandlers\T
 use HiEvents\Services\Application\Handlers\Order\Payment\Stripe\DTO\StripeWebhookDTO;
 use HiEvents\Services\Application\Handlers\Order\Payment\Stripe\IncomingWebhookHandler;
 use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\AccountUpdateHandler;
+use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\ChargeDisputeHandler;
 use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\ChargeRefundUpdatedHandler;
 use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\ChargeSucceededHandler;
 use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\CustomerSubscriptionUpdatedHandler;
 use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\PaymentIntentFailedHandler;
+use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\PaymentIntentProcessingHandler;
 use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\PaymentIntentSucceededHandler;
 use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\PayoutPaidHandler;
 use HiEvents\Services\Domain\Subscription\AccountSubscriptionSyncService;
@@ -54,6 +56,8 @@ class IncomingWebhookSubscriptionEventsTest extends TestCase
             $this->unused(PayoutPaidHandler::class),
             $this->unused(TerminalReaderActionFailedHandler::class),
             new CustomerSubscriptionUpdatedHandler($this->syncService),
+            $this->unused(PaymentIntentProcessingHandler::class),
+            $this->unused(ChargeDisputeHandler::class),
             Mockery::mock(Logger::class)->shouldIgnoreMissing(),
             new Repository(new ArrayStore),
             new StripeConfigurationService,

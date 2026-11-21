@@ -65,6 +65,7 @@ class Order extends BaseModel
             'total_discount' => 'float',
             'total_fee' => 'float',
             'total_refunded' => 'float',
+            'total_disputed' => 'float',
             'box_office_amount_tendered' => 'float',
             'box_office_change_due' => 'float',
             'point_in_time_data' => 'array',

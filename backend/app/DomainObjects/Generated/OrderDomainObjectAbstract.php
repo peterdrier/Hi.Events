@@ -58,6 +58,8 @@ abstract class OrderDomainObjectAbstract extends \HiEvents\DomainObjects\Abstrac
     final public const EXTERNAL_REFERENCE = 'external_reference';
     final public const RETURN_URL = 'return_url';
     final public const SEND_BUYER_EMAILS = 'send_buyer_emails';
+    final public const PAYMENT_PROCESSING_AT = 'payment_processing_at';
+    final public const TOTAL_DISPUTED = 'total_disputed';
 
     protected int $id;
     protected int $event_id;
@@ -107,6 +109,8 @@ abstract class OrderDomainObjectAbstract extends \HiEvents\DomainObjects\Abstrac
     protected ?string $external_reference = null;
     protected ?string $return_url = null;
     protected bool $send_buyer_emails = true;
+    protected ?string $payment_processing_at = null;
+    protected float $total_disputed = 0.0;
 
     public function toArray(): array
     {
@@ -159,6 +163,8 @@ abstract class OrderDomainObjectAbstract extends \HiEvents\DomainObjects\Abstrac
                     'external_reference' => $this->external_reference ?? null,
                     'return_url' => $this->return_url ?? null,
                     'send_buyer_emails' => $this->send_buyer_emails ?? null,
+                    'payment_processing_at' => $this->payment_processing_at ?? null,
+                    'total_disputed' => $this->total_disputed ?? null,
                 ];
     }
 
@@ -688,5 +694,27 @@ abstract class OrderDomainObjectAbstract extends \HiEvents\DomainObjects\Abstrac
     public function getSendBuyerEmails(): bool
     {
         return $this->send_buyer_emails;
+    }
+
+    public function setPaymentProcessingAt(?string $payment_processing_at): self
+    {
+        $this->payment_processing_at = $payment_processing_at;
+        return $this;
+    }
+
+    public function getPaymentProcessingAt(): ?string
+    {
+        return $this->payment_processing_at;
+    }
+
+    public function setTotalDisputed(float $total_disputed): self
+    {
+        $this->total_disputed = $total_disputed;
+        return $this;
+    }
+
+    public function getTotalDisputed(): float
+    {
+        return $this->total_disputed;
     }
 }

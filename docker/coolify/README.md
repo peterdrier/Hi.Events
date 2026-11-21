@@ -10,7 +10,10 @@ Runs this fork, with the Humans checkout endpoint, as one Coolify Docker Compose
 2. Give the `hievents` service a domain, for example `https://tickets-test.example.org`. Coolify puts it in
    `SERVICE_FQDN_HIEVENTS` and generates the database password, `APP_KEY` and `JWT_SECRET`.
 3. Set the Stripe variables (use test keys for a trial): `STRIPE_PUBLIC_KEY`, `STRIPE_SECRET_KEY`,
-   `STRIPE_WEBHOOK_SECRET`. Point a Stripe webhook at `https://<domain>/api/public/webhooks/stripe`. Optionally set the
+   `STRIPE_WEBHOOK_SECRET`. Point a Stripe webhook at `https://<domain>/api/public/webhooks/stripe` with the events `payment_intent.succeeded`,
+   `payment_intent.payment_failed`, `payment_intent.processing`, `charge.succeeded`, `charge.updated`, `charge.refunded`,
+   `refund.created`, `refund.updated` and every `charge.dispute.*` event (Humans needs the last two groups to see bank
+   payments on their way and chargebacks). Optionally set the
    `MAIL_*` variables; mail goes to the log otherwise.
 4. Deploy. Migrations run on start.
 

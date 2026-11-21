@@ -149,7 +149,7 @@ STRIPE_SECRET_KEY=your_secret_key
 STRIPE_WEBHOOK_SECRET=your_webhook_secret
 ```
 
-Point a Stripe webhook at `/api/public/webhooks/stripe` and subscribe it to `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.succeeded`, `charge.updated`, `charge.refunded`, `refund.created`, `refund.updated`, `account.updated`, `payout.paid`, `payout.updated` and `terminal.reader.action_failed` (box office card readers).
+Point a Stripe webhook at `/api/public/webhooks/stripe` and subscribe it to `payment_intent.succeeded`, `payment_intent.payment_failed`, `payment_intent.processing`, `charge.dispute.created`, `charge.dispute.updated`, `charge.dispute.closed`, `charge.dispute.funds_withdrawn`, `charge.dispute.funds_reinstated`, `charge.succeeded`, `charge.updated`, `charge.refunded`, `refund.created`, `refund.updated`, `account.updated`, `payout.paid`, `payout.updated` and `terminal.reader.action_failed` (box office card readers).
 
 11. **Optional: Enterprise features:**
 
