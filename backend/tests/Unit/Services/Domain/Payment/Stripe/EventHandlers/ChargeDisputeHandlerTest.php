@@ -164,16 +164,15 @@ class ChargeDisputeHandlerTest extends TestCase
         $this->handler->handleEvent($this->webhookDispute('needs_response'));
     }
 
-    public function test_a_dispute_stripe_does_not_list_yet_is_read_by_id(): void
+    public function test_a_dispute_stripe_does_not_list_yet_is_read_by_id_and_counted(): void
     {
         $this->paymentFoundByIntent();
-        $this->disputes->shouldReceive('all')->andReturn($this->stripeList());
+        $this->disputes->shouldReceive('all')->andReturn($this->stripeList(['dp_0', 'lost', 1000]));
         $this->disputes->shouldReceive('retrieve')->once()->with('dp_1', [], ['stripe_account' => 'acct_1'])
             ->andReturn(Dispute::constructFrom(['id' => 'dp_1', 'status' => 'needs_response', 'amount' => 22500]));
         $this->stripePaymentsRepository->shouldReceive('updateWhere')->once();
         $this->orderHolding(0);
-        $this->orderRepository->shouldNotReceive('updateFromArray');
-        $this->dispatcher->shouldNotReceive('dispatch');
+        $this->expectTotal(235.0);
 
         $this->handler->handleEvent($this->webhookDispute('needs_response'));
     }
