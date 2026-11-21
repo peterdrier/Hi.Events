@@ -5,11 +5,13 @@ namespace HiEvents\Services\Domain\Payment\Stripe\EventHandlers;
 use HiEvents\DomainObjects\Generated\OrderDomainObjectAbstract;
 use HiEvents\DomainObjects\Generated\StripePaymentDomainObjectAbstract;
 use HiEvents\DomainObjects\Status\OrderPaymentStatus;
+use HiEvents\DomainObjects\StripePaymentDomainObject;
 use HiEvents\Repository\Interfaces\OrderRepositoryInterface;
 use HiEvents\Repository\Interfaces\StripePaymentsRepositoryInterface;
 use HiEvents\Services\Infrastructure\DomainEvents\DomainEventDispatcherService;
 use HiEvents\Services\Infrastructure\DomainEvents\Enums\DomainEventType;
 use HiEvents\Services\Infrastructure\DomainEvents\Events\OrderEvent;
+use HiEvents\Services\Infrastructure\Stripe\StripeClientFactory;
 use Stripe\PaymentIntent;
 
 readonly class PaymentIntentProcessingHandler
@@ -18,6 +20,7 @@ readonly class PaymentIntentProcessingHandler
         private OrderRepositoryInterface $orderRepository,
         private StripePaymentsRepositoryInterface $stripePaymentsRepository,
         private DomainEventDispatcherService $domainEventDispatcherService,
+        private StripeClientFactory $stripeClientFactory,
     ) {}
 
     public function handleEvent(PaymentIntent $paymentIntent): void
@@ -26,7 +29,7 @@ readonly class PaymentIntentProcessingHandler
             StripePaymentDomainObjectAbstract::PAYMENT_INTENT_ID => $paymentIntent->id,
         ]);
 
-        if ($stripePayment === null) {
+        if ($stripePayment === null || ! $this->isStillProcessing($paymentIntent->id, $stripePayment)) {
             return;
         }
 
@@ -54,5 +57,21 @@ readonly class PaymentIntentProcessingHandler
                 orderId: $stripePayment->getOrderId(),
             ),
         );
+    }
+
+    private function isStillProcessing(string $paymentIntentId, StripePaymentDomainObject $stripePayment): bool
+    {
+        $live = $this->stripeClientFactory
+            ->createForPlatform($stripePayment->getStripePlatformEnum())
+            ->paymentIntents
+            ->retrieve(
+                $paymentIntentId,
+                [],
+                $stripePayment->getConnectedAccountId() !== null
+                    ? ['stripe_account' => $stripePayment->getConnectedAccountId()]
+                    : [],
+            );
+
+        return $live->status === PaymentIntent::STATUS_PROCESSING;
     }
 }

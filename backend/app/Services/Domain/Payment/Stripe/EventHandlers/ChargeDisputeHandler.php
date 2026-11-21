@@ -25,6 +25,7 @@ readonly class ChargeDisputeHandler
         Dispute::STATUS_WARNING_NEEDS_RESPONSE,
         Dispute::STATUS_WARNING_UNDER_REVIEW,
         Dispute::STATUS_WARNING_CLOSED,
+        'prevented',
     ];
 
     public function __construct(
@@ -52,11 +53,11 @@ readonly class ChargeDisputeHandler
             return;
         }
 
-        $current = $this->retrieve($dispute->id, $stripePayment);
-
-        $changed = $this->databaseManager->transaction(function () use ($current, $stripePayment) {
+        $changed = $this->databaseManager->transaction(function () use ($dispute, $stripePayment) {
             $order = $this->orderRepository->findById($stripePayment->getOrderId());
             $this->transactionLockService->lockOrder($order->getShortId());
+
+            $current = $this->retrieve($dispute->id, $stripePayment);
 
             $this->stripePaymentsRepository->updateWhere(
                 attributes: [

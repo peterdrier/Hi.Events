@@ -15,6 +15,9 @@ use HiEvents\Repository\Interfaces\OrderRepositoryInterface;
 use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\PaymentIntentFailedHandler;
 use HiEvents\Services\Domain\Payment\Stripe\PaymentIntentFailureGuard;
 use HiEvents\Services\Domain\Payment\Stripe\StripePaymentUpdateFromPaymentIntentService;
+use HiEvents\Services\Infrastructure\DomainEvents\DomainEventDispatcherService;
+use HiEvents\Services\Infrastructure\DomainEvents\Enums\DomainEventType;
+use HiEvents\Services\Infrastructure\DomainEvents\Events\OrderEvent;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository;
 use Illuminate\Database\DatabaseManager;
@@ -49,6 +52,8 @@ class PaymentIntentFailedHandlerTest extends TestCase
 
     private TerminalAttemptTracker $attemptTracker;
 
+    private DomainEventDispatcherService|MockInterface $dispatcher;
+
     private PaymentIntentFailedHandler $handler;
 
     protected function setUp(): void
@@ -65,6 +70,7 @@ class PaymentIntentFailedHandlerTest extends TestCase
         $databaseManager->shouldReceive('transaction')->andReturnUsing(fn ($callback) => $callback());
 
         $this->attemptTracker = new TerminalAttemptTracker(new Repository(new ArrayStore));
+        $this->dispatcher = Mockery::mock(DomainEventDispatcherService::class);
 
         $this->handler = new PaymentIntentFailedHandler(
             $this->orderRepository,
@@ -73,6 +79,7 @@ class PaymentIntentFailedHandlerTest extends TestCase
             new RecordingStripePaymentUpdateService($this->updateLog),
             $this->attemptTracker,
             Mockery::mock(PaymentIntentFailureGuard::class)->shouldIgnoreMissing(),
+            $this->dispatcher,
         );
     }
 
@@ -121,6 +128,8 @@ class PaymentIntentFailedHandlerTest extends TestCase
         $updatedOrder = (new OrderDomainObject)->setId(1);
         $this->orderRepository->shouldReceive('loadRelation')->with(OrderItemDomainObject::class)->andReturnSelf();
         $this->orderRepository->shouldReceive('findById')->with(1)->andReturn($updatedOrder);
+        $this->dispatcher->shouldReceive('dispatch')->once()
+            ->with(Mockery::on(fn (OrderEvent $event) => $event->type === DomainEventType::ORDER_UPDATED && $event->orderId === 1));
 
         $this->handler->handleEvent(PaymentIntent::constructFrom(['id' => 'pi_test']));
 
@@ -139,6 +148,7 @@ class PaymentIntentFailedHandlerTest extends TestCase
 
         $this->orderRepository->shouldReceive('updateWhere')->once()->andReturn(0);
         $this->orderRepository->shouldNotReceive('findById');
+        $this->dispatcher->shouldNotReceive('dispatch');
 
         $this->handler->handleEvent(PaymentIntent::constructFrom(['id' => 'pi_test']));
 

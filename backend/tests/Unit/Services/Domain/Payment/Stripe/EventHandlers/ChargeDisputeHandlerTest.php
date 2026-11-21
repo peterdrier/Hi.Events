@@ -35,6 +35,8 @@ class ChargeDisputeHandlerTest extends TestCase
 
     private DomainEventDispatcherService|MockInterface $dispatcher;
 
+    private TransactionLockService|MockInterface $lock;
+
     private ChargeDisputeHandler $handler;
 
     private StripePaymentDomainObject $payment;
@@ -53,6 +55,8 @@ class ChargeDisputeHandlerTest extends TestCase
         $factory = Mockery::mock(StripeClientFactory::class);
         $factory->shouldReceive('createForPlatform')->andReturn($client);
 
+        $this->lock = Mockery::mock(TransactionLockService::class)->shouldIgnoreMissing();
+
         $databaseManager = Mockery::mock(DatabaseManager::class);
         $databaseManager->shouldReceive('transaction')->andReturnUsing(fn ($callback) => $callback());
 
@@ -61,7 +65,7 @@ class ChargeDisputeHandlerTest extends TestCase
             $this->orderRepository,
             $factory,
             $databaseManager,
-            Mockery::mock(TransactionLockService::class)->shouldIgnoreMissing(),
+            $this->lock,
             $this->dispatcher,
             new NullLogger,
         );
@@ -123,6 +127,7 @@ class ChargeDisputeHandlerTest extends TestCase
             'won' => ['won', 0.0],
             'inquiry' => ['warning_needs_response', 0.0],
             'inquiry closed' => ['warning_closed', 0.0],
+            'prevented by early fraud warning' => ['prevented', 0.0],
         ];
     }
 
@@ -183,5 +188,22 @@ class ChargeDisputeHandlerTest extends TestCase
             'payment_intent' => 'pi_1',
             'charge' => 'ch_1',
         ]);
+    }
+
+    public function test_the_dispute_is_read_from_stripe_only_once_the_order_is_locked(): void
+    {
+        $this->stripePaymentsRepository->shouldReceive('findFirstWhere')->andReturn($this->payment);
+        $this->orderRepository->shouldReceive('findById')
+            ->andReturn((new OrderDomainObject)->setId(5)->setShortId('o_5')->setCurrency('EUR')->setTotalDisputed(225));
+        $this->lock->shouldReceive('lockOrder')->once()->with('o_5')->globally()->ordered();
+        $this->disputes->shouldReceive('retrieve')->once()->globally()->ordered()
+            ->andReturn(Dispute::constructFrom(['id' => 'dp_1', 'status' => 'needs_response', 'amount' => 22500]));
+        $this->stripePaymentsRepository->shouldReceive('updateWhere')->once();
+        $this->stripePaymentsRepository->shouldReceive('findWhere')->andReturn(new Collection([
+            (new StripePaymentDomainObject)->setDisputeId('dp_1')->setDisputeStatus('needs_response')->setDisputeAmount(22500),
+        ]));
+        $this->dispatcher->shouldNotReceive('dispatch');
+
+        $this->handler->handleEvent($this->webhookDispute('needs_response'));
     }
 }

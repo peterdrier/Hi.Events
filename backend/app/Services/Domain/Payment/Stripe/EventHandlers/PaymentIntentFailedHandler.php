@@ -14,6 +14,9 @@ use HiEvents\Repository\Eloquent\Value\Relationship;
 use HiEvents\Repository\Interfaces\OrderRepositoryInterface;
 use HiEvents\Services\Domain\Payment\Stripe\PaymentIntentFailureGuard;
 use HiEvents\Services\Domain\Payment\Stripe\StripePaymentUpdateFromPaymentIntentService;
+use HiEvents\Services\Infrastructure\DomainEvents\DomainEventDispatcherService;
+use HiEvents\Services\Infrastructure\DomainEvents\Enums\DomainEventType;
+use HiEvents\Services\Infrastructure\DomainEvents\Events\OrderEvent;
 use Illuminate\Database\DatabaseManager;
 use Stripe\PaymentIntent;
 use Throwable;
@@ -27,6 +30,7 @@ readonly class PaymentIntentFailedHandler
         private StripePaymentUpdateFromPaymentIntentService $stripePaymentUpdateFromPaymentIntentService,
         private TerminalAttemptTracker $attemptTracker,
         private PaymentIntentFailureGuard $paymentIntentFailureGuard,
+        private DomainEventDispatcherService $domainEventDispatcherService,
     ) {}
 
     /**
@@ -38,7 +42,9 @@ readonly class PaymentIntentFailedHandler
             return;
         }
 
-        $stripePayment = $this->databaseManager->transaction(function () use ($paymentIntent) {
+        $updatedOrder = null;
+
+        $stripePayment = $this->databaseManager->transaction(function () use ($paymentIntent, &$updatedOrder) {
             /** @var StripePaymentDomainObjectAbstract $stripePayment */
             $stripePayment = $this->stripePaymentsRepository
                 ->loadRelation(new Relationship(OrderDomainObject::class, name: 'order'))
@@ -60,6 +66,15 @@ readonly class PaymentIntentFailedHandler
 
             return $stripePayment;
         });
+
+        if ($updatedOrder !== null) {
+            $this->domainEventDispatcherService->dispatch(
+                new OrderEvent(
+                    type: DomainEventType::ORDER_UPDATED,
+                    orderId: $updatedOrder->getId(),
+                ),
+            );
+        }
 
         if ($stripePayment !== null && $paymentIntent->status !== PaymentIntent::STATUS_CANCELED) {
             $this->paymentIntentFailureGuard->recordFailure($stripePayment);
