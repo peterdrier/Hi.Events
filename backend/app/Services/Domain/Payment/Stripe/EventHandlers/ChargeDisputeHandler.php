@@ -63,16 +63,21 @@ readonly class ChargeDisputeHandler
             $disputedMinor = 0;
 
             foreach ($this->stripePaymentsRepository->findWhere([StripePaymentDomainObjectAbstract::ORDER_ID => $order->getId()]) as $payment) {
-                $disputes = $this->listDisputes($payment);
+                $disputes = [];
+                foreach ($this->listDisputes($payment) as $listed) {
+                    $disputes[$listed->id] = $listed;
+                }
+
+                if ($payment->getId() === $stripePayment->getId()) {
+                    $current = $disputes[$dispute->id] ?? $this->retrieve($dispute->id, $payment);
+                    $disputes[$current->id] = $current;
+                    $this->recordOnPayment($payment, $current);
+                }
 
                 $disputedMinor += array_sum(array_map(
                     static fn (Dispute $each) => in_array($each->status, self::STATUSES_HOLDING_NO_MONEY, true) ? 0 : (int) $each->amount,
                     $disputes,
                 ));
-
-                if ($payment->getId() === $stripePayment->getId()) {
-                    $this->recordOnPayment($payment, $this->current($dispute, $disputes, $payment));
-                }
             }
 
             $totalDisputed = Money::ofMinor($disputedMinor, $order->getCurrency())->getAmount()->toFloat();
@@ -106,18 +111,9 @@ readonly class ChargeDisputeHandler
         );
     }
 
-    /**
-     * @param  Dispute[]  $disputes
-     */
-    private function current(Dispute $dispute, array $disputes, StripePaymentDomainObject $payment): Dispute
+    private function retrieve(string $disputeId, StripePaymentDomainObject $payment): Dispute
     {
-        foreach ($disputes as $each) {
-            if ($each->id === $dispute->id) {
-                return $each;
-            }
-        }
-
-        return $this->client($payment)->disputes->retrieve($dispute->id, [], $this->options($payment));
+        return $this->client($payment)->disputes->retrieve($disputeId, [], $this->options($payment));
     }
 
     private function recordOnPayment(StripePaymentDomainObject $payment, Dispute $current): void

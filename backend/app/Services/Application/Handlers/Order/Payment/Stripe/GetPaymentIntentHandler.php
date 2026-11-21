@@ -59,9 +59,6 @@ class GetPaymentIntentHandler
             throw new ResourceNotFoundException('Payment intent not found: '.$e->getMessage());
         }
 
-        // If the payment intent is a success and the order's payment status is not received, we manually handle the event here.
-        // This is because the webhook may not have been received yet, or has failed for some reason.
-        // This is a safety net to ensure the order is updated correctly.
         if ($paymentIntent->status === 'succeeded' && $order->getPaymentStatus() !== OrderPaymentStatus::PAYMENT_RECEIVED->name) {
             $this->paymentIntentSucceededHandler->handleEvent($paymentIntent);
         }
