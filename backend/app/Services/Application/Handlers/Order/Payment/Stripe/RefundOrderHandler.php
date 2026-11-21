@@ -91,6 +91,24 @@ class RefundOrderHandler
         ]) > 0;
     }
 
+    /**
+     * @throws ApiErrorException
+     */
+    private function isPendingUnderKey(OrderDomainObject $order, ?string $idempotencyKey): bool
+    {
+        if ($idempotencyKey === null
+            || $order->getRefundStatus() !== OrderRefundStatus::REFUND_PENDING->name
+            || ! $order->getStripePayment()) {
+            return false;
+        }
+
+        return $this->refundService->hasOpenRefundUnderKey(
+            payment: $order->getStripePayment(),
+            stripeClient: $this->stripeClientFactory->createForPlatform($order->getStripePayment()->getStripePlatformEnum()),
+            idempotencyKey: $idempotencyKey,
+        );
+    }
+
     private function markOrderRefundPending(OrderDomainObject $order): OrderDomainObject
     {
         return $this->orderRepository->updateFromArray(
@@ -122,7 +140,8 @@ class RefundOrderHandler
     {
         $order = $this->fetchOrder($refundOrderDTO->event_id, $refundOrderDTO->order_id);
 
-        if ($this->wasAlreadyRefunded($order, $refundOrderDTO->idempotency_key)) {
+        if ($this->wasAlreadyRefunded($order, $refundOrderDTO->idempotency_key)
+            || $this->isPendingUnderKey($order, $refundOrderDTO->idempotency_key)) {
             return $order;
         }
 

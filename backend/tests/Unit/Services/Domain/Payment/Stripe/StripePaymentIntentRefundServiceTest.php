@@ -7,6 +7,7 @@ use HiEvents\Services\Domain\Payment\Stripe\StripePaymentIntentRefundService;
 use HiEvents\Values\MoneyValue;
 use Illuminate\Config\Repository;
 use Mockery;
+use Stripe\Collection;
 use Stripe\Refund;
 use Stripe\Service\RefundService;
 use Stripe\StripeClient;
@@ -98,6 +99,27 @@ class StripePaymentIntentRefundServiceTest extends TestCase
         $this->refund(amount: 12.50, alreadyRefunded: 0.0, failedRefundCount: 0, saasMode: true);
 
         $this->assertSame('acct_test', $this->requests[0]['opts']['stripe_account']);
+    }
+
+    public function test_an_open_refund_is_found_by_its_key_and_a_failed_one_is_not(): void
+    {
+        $refunds = Mockery::mock(RefundService::class);
+        $refunds->shouldReceive('all')
+            ->with(['payment_intent' => 'pi_test_abc123', 'limit' => 100], [])
+            ->andReturn(Collection::constructFrom(['object' => 'list', 'data' => [
+                ['object' => 'refund', 'id' => 're_1', 'status' => 'failed', 'metadata' => ['idempotency_key' => 'humans-refund-2']],
+                ['object' => 'refund', 'id' => 're_2', 'status' => 'pending', 'metadata' => ['idempotency_key' => 'humans-refund-1']],
+            ]]));
+
+        $stripeClient = Mockery::mock(StripeClient::class);
+        $stripeClient->shouldReceive('getService')->with('refunds')->andReturn($refunds);
+
+        $service = new StripePaymentIntentRefundService(new Repository(['app' => ['saas_mode_enabled' => false]]));
+        $payment = (new StripePaymentDomainObject)->setPaymentIntentId('pi_test_abc123');
+
+        $this->assertTrue($service->hasOpenRefundUnderKey($payment, $stripeClient, 'humans-refund-1'));
+        $this->assertFalse($service->hasOpenRefundUnderKey($payment, $stripeClient, 'humans-refund-2'));
+        $this->assertFalse($service->hasOpenRefundUnderKey($payment, $stripeClient, 'humans-refund-3'));
     }
 
     private function refund(

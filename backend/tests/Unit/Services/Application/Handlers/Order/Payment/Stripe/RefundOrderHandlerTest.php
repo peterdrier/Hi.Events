@@ -165,6 +165,31 @@ class RefundOrderHandlerTest extends TestCase
         $this->handler->handle($this->givenDTO());
     }
 
+    public function test_a_retry_of_the_pending_refund_under_its_key_is_not_sent_again(): void
+    {
+        $order = $this->givenPendingOrder();
+        $this->givenNoRefundWithKey('humans-refund-1');
+        $this->refundService->shouldReceive('hasOpenRefundUnderKey')
+            ->once()
+            ->withArgs(fn ($payment, $client, string $key) => $key === 'humans-refund-1')
+            ->andReturn(true);
+        $this->refundService->shouldNotReceive('refundPayment');
+
+        $this->assertSame($order, $this->handler->handle($this->givenDTO(idempotencyKey: 'humans-refund-1')));
+    }
+
+    public function test_another_keyed_refund_is_refused_while_one_is_pending(): void
+    {
+        $this->givenPendingOrder();
+        $this->givenNoRefundWithKey('humans-refund-2');
+        $this->refundService->shouldReceive('hasOpenRefundUnderKey')->once()->andReturn(false);
+        $this->refundService->shouldNotReceive('refundPayment');
+
+        $this->expectException(RefundNotPossibleException::class);
+
+        $this->handler->handle($this->givenDTO(idempotencyKey: 'humans-refund-2'));
+    }
+
     public function test_the_order_is_marked_refund_pending_before_the_stripe_refund_is_created(): void
     {
         $calls = [];
@@ -230,6 +255,22 @@ class RefundOrderHandlerTest extends TestCase
 
                 return $order;
             });
+
+        return $order;
+    }
+
+    private function givenPendingOrder(): OrderDomainObject
+    {
+        $order = (new OrderDomainObject)
+            ->setId(self::ORDER_ID)
+            ->setEventId(self::EVENT_ID)
+            ->setCurrency('USD')
+            ->setRefundStatus(OrderRefundStatus::REFUND_PENDING->name)
+            ->setStripePayment((new StripePaymentDomainObject)->setStripePlatform(null));
+
+        $this->orderRepository->shouldReceive('loadRelation')->andReturnSelf();
+        $this->orderRepository->shouldReceive('findFirstWhere')->andReturn($order);
+        $this->orderRepository->shouldNotReceive('updateFromArray');
 
         return $order;
     }

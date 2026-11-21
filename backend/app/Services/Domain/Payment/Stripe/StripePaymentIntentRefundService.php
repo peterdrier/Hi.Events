@@ -58,6 +58,29 @@ class StripePaymentIntentRefundService
         );
     }
 
+    /**
+     * @throws ApiErrorException
+     */
+    public function hasOpenRefundUnderKey(
+        StripePaymentDomainObject $payment,
+        StripeClient $stripeClient,
+        string $idempotencyKey,
+    ): bool {
+        $refunds = $stripeClient->refunds->all(
+            params: ['payment_intent' => $payment->getPaymentIntentId(), 'limit' => 100],
+            opts: $this->getStripeAccountData($payment),
+        );
+
+        foreach ($refunds->data as $refund) {
+            if (($refund->metadata[self::IDEMPOTENCY_KEY_METADATA_KEY] ?? null) === $idempotencyKey
+                && in_array($refund->status, [Refund::STATUS_PENDING, Refund::STATUS_REQUIRES_ACTION, Refund::STATUS_SUCCEEDED], true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function idempotencyKey(
         StripePaymentDomainObject $payment,
         MoneyValue $amount,
