@@ -372,6 +372,10 @@ class PaymentIntentSucceededHandler
             );
         }
 
+        if ($this->isCheckoutOrder($stripePayment->getOrder())) {
+            return;
+        }
+
         if (in_array($stripePayment->getOrder()->getStatus(), [
             OrderStatus::CANCELLED->name,
             OrderStatus::ABANDONED->name,
@@ -398,6 +402,11 @@ class PaymentIntentSucceededHandler
         $this->handleExpiredOrder($stripePayment);
     }
 
+    private function isCheckoutOrder(OrderDomainObject $order): bool
+    {
+        return $order->getExternalReference() !== null;
+    }
+
     private function updateAttendeeStatuses(OrderDomainObject $updatedOrder): void
     {
         $this->attendeeRepository->updateWhere(
@@ -406,7 +415,9 @@ class PaymentIntentSucceededHandler
             ],
             where: [
                 'order_id' => $updatedOrder->getId(),
-                'status' => AttendeeStatus::AWAITING_PAYMENT->name,
+                ['status', 'in', $this->isCheckoutOrder($updatedOrder)
+                    ? [AttendeeStatus::AWAITING_PAYMENT->name, AttendeeStatus::CANCELLED->name]
+                    : [AttendeeStatus::AWAITING_PAYMENT->name]],
             ],
         );
     }

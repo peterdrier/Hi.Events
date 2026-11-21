@@ -31,7 +31,9 @@ use Illuminate\Cache\Repository;
 use Illuminate\Database\DatabaseManager;
 use Mockery;
 use Mockery\MockInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Stripe\PaymentIntent;
 use Tests\TestCase;
 use Throwable;
@@ -379,6 +381,36 @@ class PaymentIntentSucceededHandlerTest extends TestCase
         } catch (CannotAcceptPaymentException) {
             $this->fail('A rescued order must not be rejected');
         } catch (Throwable) {
+        }
+
+        $this->assertSame([], $this->refundLog->orderIds);
+    }
+
+    public static function lateCheckoutOrderStatuses(): array
+    {
+        return [
+            'expired' => [OrderStatus::RESERVED->name],
+            'cancelled' => [OrderStatus::CANCELLED->name],
+            'abandoned' => [OrderStatus::ABANDONED->name],
+        ];
+    }
+
+    #[DataProvider('lateCheckoutOrderStatuses')]
+    public function test_a_late_payment_on_an_expired_or_cancelled_checkout_order_completes_it_without_a_refund(string $status): void
+    {
+        $this->givenStripePaymentFor($this->expiredOrderAwaitingPayment()->setStatus($status)->setExternalReference('humans-order-1'));
+        $this->stripePaymentsRepository->shouldReceive('updateWhere');
+        $this->orderRepository->shouldReceive('loadRelation')->andReturnSelf();
+        $this->orderRepository->shouldReceive('updateFromArray')
+            ->once()
+            ->with(1, Mockery::on(fn (array $attributes) => $attributes['status'] === OrderStatus::COMPLETED->name))
+            ->andThrow(new RuntimeException('completed'));
+
+        try {
+            $this->handler->handleEvent(PaymentIntent::constructFrom(['id' => 'pi_test']));
+            $this->fail('Expected the order to be completed');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('completed', $exception->getMessage());
         }
 
         $this->assertSame([], $this->refundLog->orderIds);
