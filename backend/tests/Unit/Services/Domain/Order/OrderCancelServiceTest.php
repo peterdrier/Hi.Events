@@ -253,6 +253,46 @@ class OrderCancelServiceTest extends TestCase
         Event::assertNotDispatched(CapacityChangedEvent::class);
     }
 
+    public function test_cancel_order_with_buyer_emails_off_skips_email(): void
+    {
+        Event::fake();
+
+        $order = $this->makeOrder(email: 'buyer@example.com', sendBuyerEmails: false);
+
+        $this->attendeeRepository
+            ->shouldReceive('findWhere')
+            ->twice()
+            ->with(['order_id' => 1])
+            ->andReturn(new Collection);
+
+        $this->attendeeRepository->shouldReceive('updateWhere')->once();
+
+        $this->productQuantityService->shouldNotReceive('decreaseQuantitySold');
+        $this->orderRepository->shouldNotReceive('loadRelation');
+
+        $this->orderRepository->shouldReceive('updateWhere')->once();
+
+        $this->eventStatisticsCancellationService->shouldReceive('decrementForCancelledOrder')
+            ->once()
+            ->with($order);
+
+        $this->revertWaitlistOffersService->shouldReceive('revertOffersForOrder')->once()->with(1)->andReturn([]);
+
+        $this->eventRepository->shouldNotReceive('loadRelation');
+        $this->mailer->shouldNotReceive('to');
+        $this->mailer->shouldNotReceive('send');
+
+        $this->domainEventDispatcherService->shouldReceive('dispatch')->once();
+
+        $this->databaseManager->shouldReceive('transaction')->once()->andReturnUsing(function ($callback) {
+            return $callback();
+        });
+
+        $this->service->cancelOrder($order);
+
+        Event::assertNotDispatched(CapacityChangedEvent::class);
+    }
+
     public function test_cancel_order_awaiting_offline_payment_restores_non_ticket_quantities(): void
     {
         Event::fake();
@@ -364,13 +404,14 @@ class OrderCancelServiceTest extends TestCase
         });
     }
 
-    private function makeOrder(?string $email, bool $completed = false, bool $awaitingOfflinePayment = false): OrderDomainObject
+    private function makeOrder(?string $email, bool $completed = false, bool $awaitingOfflinePayment = false, bool $sendBuyerEmails = true): OrderDomainObject
     {
         $order = m::mock(OrderDomainObject::class);
         $order->shouldReceive('getEventId')->andReturn(1);
         $order->shouldReceive('getId')->andReturn(1);
         $order->shouldReceive('getEmail')->andReturn($email);
         $order->shouldReceive('getLocale')->andReturn('en');
+        $order->shouldReceive('getSendBuyerEmails')->andReturn($sendBuyerEmails);
         $order->shouldReceive('isOrderCompleted')->andReturn($completed);
         $order->shouldReceive('isOrderAwaitingOfflinePayment')->andReturn($awaitingOfflinePayment);
 

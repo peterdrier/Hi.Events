@@ -1317,5 +1317,10 @@
     "The attendee could not be checked in.": "Účastníka sa nepodarilo odbaviť.",
     "This was sent less than :minutes minutes ago. Wait before sending it again.": "Toto bolo odoslané pred menej ako :minutes minútami. Pred ďalším odoslaním počkajte.",
     "Only completed orders have a confirmation to resend.": "Potvrdenie možno znova odoslať len pri dokončených objednávkach.",
-    "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "Na túto e-mailovú adresu už bolo za posledných :minutes minút odoslaných :count e-mailov. Pred ďalším odoslaním počkajte."
+    "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "Na túto e-mailovú adresu už bolo za posledných :minutes minút odoslaných :count e-mailov. Pred ďalším odoslaním počkajte.",
+    "An order with this external reference already exists with a different total": "Objednávka s týmto externým odkazom už existuje s inou celkovou sumou",
+    "The order total does not match the requested prices. Remove taxes and fees from these products.": "Celková suma objednávky nezodpovedá požadovaným cenám. Odstráňte z týchto produktov dane a poplatky.",
+    "Product price not found for this event": "Cena produktu pre toto podujatie sa nenašla",
+    "Event occurrence not found for this event": "Termín pre toto podujatie sa nenašiel",
+    "Only orders created through the checkout endpoint can be anonymized here": "Tu je možné anonymizovať iba objednávky vytvorené cez pokladničný koncový bod"
 }

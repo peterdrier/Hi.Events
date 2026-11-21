@@ -1322,5 +1322,10 @@
     "The attendee could not be checked in.": "A résztvevőt nem sikerült beléptetni.",
     "This was sent less than :minutes minutes ago. Wait before sending it again.": "Ezt kevesebb mint :minutes perce küldték el. Várjon, mielőtt újra elküldi.",
     "Only completed orders have a confirmation to resend.": "Csak a teljesített rendeléseknek van újraküldhető visszaigazolása.",
-    "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "Erre az e-mail-címre az elmúlt :minutes percben már :count e-mail ment ki. Várjon, mielőtt többet küld."
+    "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "Erre az e-mail-címre az elmúlt :minutes percben már :count e-mail ment ki. Várjon, mielőtt többet küld.",
+    "An order with this external reference already exists with a different total": "Ezzel a külső hivatkozással már létezik egy eltérő végösszegű rendelés",
+    "The order total does not match the requested prices. Remove taxes and fees from these products.": "A rendelés végösszege nem egyezik a kért árakkal. Távolítsa el az adókat és díjakat ezekről a termékekről.",
+    "Product price not found for this event": "A termék ára nem található ehhez az eseményhez",
+    "Event occurrence not found for this event": "Az időpont nem található ehhez az eseményhez",
+    "Only orders created through the checkout endpoint can be anonymized here": "Itt csak a fizetési végponton keresztül létrehozott rendelések anonimizálhatók"
 }

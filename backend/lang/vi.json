@@ -1317,5 +1317,10 @@
     "The attendee could not be checked in.": "Không thể check-in người tham dự.",
     "This was sent less than :minutes minutes ago. Wait before sending it again.": "Mục này đã được gửi chưa đầy :minutes phút trước. Hãy chờ trước khi gửi lại.",
     "Only completed orders have a confirmation to resend.": "Chỉ đơn hàng đã hoàn tất mới có xác nhận để gửi lại.",
-    "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "Địa chỉ email đó đã được gửi :count email trong :minutes phút qua. Hãy chờ trước khi gửi thêm."
+    "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "Địa chỉ email đó đã được gửi :count email trong :minutes phút qua. Hãy chờ trước khi gửi thêm.",
+    "An order with this external reference already exists with a different total": "Đã tồn tại đơn hàng với mã tham chiếu bên ngoài này nhưng có tổng tiền khác",
+    "The order total does not match the requested prices. Remove taxes and fees from these products.": "Tổng đơn hàng không khớp với giá yêu cầu. Hãy xóa thuế và phí khỏi các sản phẩm này.",
+    "Product price not found for this event": "Không tìm thấy giá sản phẩm cho sự kiện này",
+    "Event occurrence not found for this event": "Không tìm thấy buổi diễn cho sự kiện này",
+    "Only orders created through the checkout endpoint can be anonymized here": "Chỉ có thể ẩn danh tại đây các đơn hàng được tạo qua điểm cuối thanh toán"
 }

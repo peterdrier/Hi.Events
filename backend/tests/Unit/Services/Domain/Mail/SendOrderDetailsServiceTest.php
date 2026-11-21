@@ -8,6 +8,7 @@ use HiEvents\DomainObjects\EventSettingDomainObject;
 use HiEvents\DomainObjects\OrderDomainObject;
 use HiEvents\DomainObjects\OrganizerDomainObject;
 use HiEvents\DomainObjects\Status\AttendeeStatus;
+use HiEvents\DomainObjects\Status\OrderPaymentStatus;
 use HiEvents\DomainObjects\Status\OrderStatus;
 use HiEvents\DomainObjects\UserDomainObject;
 use HiEvents\Mail\Order\OrderSummary;
@@ -122,6 +123,30 @@ class SendOrderDetailsServiceTest extends TestCase
             ->sendOrderSummaryAndTicketEmails($order);
 
         $this->assertNotContains('organizer@example.com', $recipients);
+    }
+
+    public function test_an_order_with_buyer_emails_off_emails_only_the_team(): void
+    {
+        $order = $this->completedOrder()
+            ->setSendBuyerEmails(false)
+            ->setAttendees(collect([$this->attendee(1, 'buyer@example.com')]));
+        $recipients = [];
+
+        $this->sendAttendeeTicketService->shouldNotReceive('sendTickets');
+
+        $this->service($order, notifyOrganizer: true, recipients: $recipients)->sendOrderSummaryAndTicketEmails($order);
+
+        $this->assertSame(['organizer@example.com'], $recipients);
+    }
+
+    public function test_a_failed_order_with_buyer_emails_off_sends_nothing(): void
+    {
+        $order = $this->completedOrder()->setStatus(OrderStatus::RESERVED->name)->setPaymentStatus(OrderPaymentStatus::PAYMENT_FAILED->name)->setSendBuyerEmails(false);
+        $recipients = [];
+
+        $this->service($order, recipients: $recipients)->sendOrderSummaryAndTicketEmails($order);
+
+        $this->assertSame([], $recipients);
     }
 
     private function completedOrder(): OrderDomainObject

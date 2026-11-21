@@ -1475,6 +1475,7 @@ export interface Order {
     session_identifier?: string;
     payment_link_created_at?: string | null;
     payment_link_url?: string;
+    return_url?: string | null;
     is_payment_link_payer?: boolean;
     offline_payment_reported_at?: string | null;
     offline_payment_note?: string | null;

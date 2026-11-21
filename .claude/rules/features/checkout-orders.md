@@ -1,0 +1,19 @@
+---
+paths:
+  - "backend/app/Services/Application/Handlers/Order/Checkout/**"
+  - "backend/app/Http/Actions/Orders/CreateCheckoutOrderAction.php"
+  - "backend/app/Http/Request/Order/CreateCheckoutOrderRequest.php"
+  - "backend/tests/Feature/Http/Actions/Orders/CreateCheckoutOrderActionTest.php"
+---
+
+# Checkout orders (API-created, caller-priced)
+
+- `POST /events/{event_id}/orders/checkout` lets an integration (the Nobodies "Humans" app) sell at prices it decides: a RESERVED order, one unit per item, buyer and attendee names filled in, `payment_link_url` to pay on the normal payment page. It skips promo codes, availability checks and the platform fee on purpose; the caller owns capacity and pricing. Seated products are refused (it takes no seats).
+- `external_reference` is unique per event and makes the call idempotent: a repeat returns the existing order, or 409 if its total differs. A repeat is matched on the total only, and one for an order no longer reserved comes back without `payment_link_url`.
+- Each item's `event_occurrence_id` must be one of this event's occurrences (422 otherwise); left out, a non-recurring event's single occurrence is used, as in the public checkout.
+- Buyer names follow `PersonNameRule` (50 characters, the `orders` column); attendee names may be up to 255, so a full legal name fits.
+- The order total must equal the sum of item prices, so products used here carry no taxes or fees; otherwise 422 and the transaction rolls back.
+- Refunds accept an optional `idempotency_key`: the Stripe idempotency key derives from it and it is stored in the refund's metadata. A key that already has a refund, in `order_refunds` or (before the webhook records it) among the payment intent's Stripe refunds, is never sent again whatever that refund's state, failed included: the request answers that refund. A new attempt after a failure takes a new key. Any other refund is still refused while one is pending. The response carries `meta.refund` (`id`, Stripe `status`) for the refund it created or found.
+- `send_buyer_emails: false` stores `orders.send_buyer_emails = false`, and every automatic buyer or attendee email for that order (summary, tickets, failed, cancelled, refunded, refunded-after-expiry) checks it. Organizer and team notifications are unaffected; an organizer's explicit "resend confirmation" still sends.
+- A payment that succeeds on a checkout order (one with `external_reference`) is always kept: the order completes even if it expired, was cancelled or abandoned, or its occurrence closed, and cancelled attendees come back. The cancel's `statistics_decremented_at` marker is cleared so a later cancel decrements the statistics again. The caller decides what to do with a late sale; Hi.Events never auto-refunds it. A second payment for an already paid order is still refunded.
+- `POST /events/{event_id}/orders/{order_id}/anonymize` is how the caller carries out an erasure request. It refuses (409) orders without `external_reference`, then runs account deletion's `OrderAnonymizer` on that one order (raw tables, so soft-deleted attendees too), scrubs the `stripe_customers` row with the buyer's email (matched by email alone, which is right only on an install with one account; account deletion matches by Stripe account id because the table has no account key), and deletes the account's `webhook_logs` whose payload is that order or one of its attendees. Amounts, statuses and dates stay; idempotent. Any new place that stores a buyer's or attendee's name or email must be added here.

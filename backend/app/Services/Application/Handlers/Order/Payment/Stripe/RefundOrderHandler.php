@@ -15,6 +15,7 @@ use HiEvents\Repository\Eloquent\Value\Relationship;
 use HiEvents\Repository\Interfaces\OrderRefundRepositoryInterface;
 use HiEvents\Repository\Interfaces\OrderRepositoryInterface;
 use HiEvents\Services\Application\Handlers\Order\DTO\RefundOrderDTO;
+use HiEvents\Services\Application\Handlers\Order\DTO\RefundOrderResultDTO;
 use HiEvents\Services\Domain\Order\OrderCancelService;
 use HiEvents\Services\Domain\Payment\Stripe\StripePaymentIntentRefundService;
 use HiEvents\Services\Infrastructure\Stripe\StripeClientFactory;
@@ -41,7 +42,7 @@ class RefundOrderHandler
      * @throws ApiErrorException
      * @throws Throwable
      */
-    public function handle(RefundOrderDTO $refundOrderDTO): OrderDomainObject
+    public function handle(RefundOrderDTO $refundOrderDTO): RefundOrderResultDTO
     {
         return $this->databaseManager->transaction(fn () => $this->refundOrder($refundOrderDTO));
     }
@@ -79,6 +80,37 @@ class RefundOrderHandler
         }
     }
 
+    /**
+     * @throws ApiErrorException
+     */
+    private function findRefundUnderKey(OrderDomainObject $order, ?string $idempotencyKey): ?RefundOrderResultDTO
+    {
+        if ($idempotencyKey === null) {
+            return null;
+        }
+
+        $recorded = $this->orderRefundRepository->findFirstWhere([
+            'order_id' => $order->getId(),
+            'metadata->'.StripePaymentIntentRefundService::IDEMPOTENCY_KEY_METADATA_KEY => $idempotencyKey,
+        ]);
+
+        if ($recorded !== null) {
+            return new RefundOrderResultDTO($order, $recorded->getRefundId(), $recorded->getStatus());
+        }
+
+        if (! $order->getStripePayment()) {
+            return null;
+        }
+
+        $refund = $this->refundService->findRefundUnderKey(
+            payment: $order->getStripePayment(),
+            stripeClient: $this->stripeClientFactory->createForPlatform($order->getStripePayment()->getStripePlatformEnum()),
+            idempotencyKey: $idempotencyKey,
+        );
+
+        return $refund === null ? null : new RefundOrderResultDTO($order, $refund->id, $refund->status);
+    }
+
     private function markOrderRefundPending(OrderDomainObject $order): OrderDomainObject
     {
         return $this->orderRepository->updateFromArray(
@@ -106,9 +138,15 @@ class RefundOrderHandler
      * @throws MathException
      * @throws NumberFormatException
      */
-    private function refundOrder(RefundOrderDTO $refundOrderDTO): OrderDomainObject
+    private function refundOrder(RefundOrderDTO $refundOrderDTO): RefundOrderResultDTO
     {
         $order = $this->fetchOrder($refundOrderDTO->event_id, $refundOrderDTO->order_id);
+
+        $existing = $this->findRefundUnderKey($order, $refundOrderDTO->idempotency_key);
+
+        if ($existing !== null) {
+            return $existing;
+        }
 
         $amount = MoneyValue::fromFloat($refundOrderDTO->amount, $order->getCurrency());
 
@@ -124,15 +162,16 @@ class RefundOrderHandler
 
         $stripeClient = $this->stripeClientFactory->createForPlatform($paymentPlatform);
 
-        $this->refundService->refundPayment(
+        $refund = $this->refundService->refundPayment(
             amount: $amount,
             alreadyRefunded: MoneyValue::fromFloat($order->getTotalRefunded(), $order->getCurrency()),
             failedRefundCount: $this->countFailedRefunds($order),
             payment: $order->getStripePayment(),
             stripeClient: $stripeClient,
-            notifyBuyer: $refundOrderDTO->notify_buyer && $order->getEmail() !== null,
+            notifyBuyer: $refundOrderDTO->notify_buyer && $order->getEmail() !== null && $order->getSendBuyerEmails(),
+            idempotencyKey: $refundOrderDTO->idempotency_key,
         );
 
-        return $pendingOrder;
+        return new RefundOrderResultDTO($pendingOrder, $refund->id, $refund->status);
     }
 }

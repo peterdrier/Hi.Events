@@ -217,6 +217,9 @@ class PaymentIntentSucceededHandler
                 OrderDomainObjectAbstract::PAYMENT_STATUS => OrderPaymentStatus::PAYMENT_RECEIVED->name,
                 OrderDomainObjectAbstract::STATUS => OrderStatus::COMPLETED->name,
                 OrderDomainObjectAbstract::PAYMENT_PROVIDER => PaymentProviders::STRIPE->value,
+                ...($this->isCheckoutOrder($stripePayment->getOrder())
+                    ? [OrderDomainObjectAbstract::STATISTICS_DECREMENTED_AT => null]
+                    : []),
             ]);
 
         if ($updatedOrder->getAffiliateId()) {
@@ -372,6 +375,10 @@ class PaymentIntentSucceededHandler
             );
         }
 
+        if ($this->isCheckoutOrder($stripePayment->getOrder())) {
+            return;
+        }
+
         if (in_array($stripePayment->getOrder()->getStatus(), [
             OrderStatus::CANCELLED->name,
             OrderStatus::ABANDONED->name,
@@ -398,6 +405,11 @@ class PaymentIntentSucceededHandler
         $this->handleExpiredOrder($stripePayment);
     }
 
+    private function isCheckoutOrder(OrderDomainObject $order): bool
+    {
+        return $order->getExternalReference() !== null;
+    }
+
     private function updateAttendeeStatuses(OrderDomainObject $updatedOrder): void
     {
         $this->attendeeRepository->updateWhere(
@@ -406,7 +418,9 @@ class PaymentIntentSucceededHandler
             ],
             where: [
                 'order_id' => $updatedOrder->getId(),
-                'status' => AttendeeStatus::AWAITING_PAYMENT->name,
+                ['status', 'in', $this->isCheckoutOrder($updatedOrder)
+                    ? [AttendeeStatus::AWAITING_PAYMENT->name, AttendeeStatus::CANCELLED->name]
+                    : [AttendeeStatus::AWAITING_PAYMENT->name]],
             ],
         );
     }

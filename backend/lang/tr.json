@@ -1332,5 +1332,10 @@
     "The attendee could not be checked in.": "Katılımcının girişi yapılamadı.",
     "This was sent less than :minutes minutes ago. Wait before sending it again.": "Bu :minutes dakikadan kısa süre önce gönderildi. Tekrar göndermeden önce bekleyin.",
     "Only completed orders have a confirmation to resend.": "Yalnızca tamamlanmış siparişlerin yeniden gönderilecek bir onayı vardır.",
-    "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "Bu e-posta adresine son :minutes dakikada zaten :count e-posta gönderildi. Daha fazla göndermeden önce bekleyin."
+    "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "Bu e-posta adresine son :minutes dakikada zaten :count e-posta gönderildi. Daha fazla göndermeden önce bekleyin.",
+    "An order with this external reference already exists with a different total": "Bu harici referansla farklı bir toplamı olan bir sipariş zaten var",
+    "The order total does not match the requested prices. Remove taxes and fees from these products.": "Sipariş toplamı istenen fiyatlarla eşleşmiyor. Bu ürünlerden vergileri ve ücretleri kaldırın.",
+    "Product price not found for this event": "Bu etkinlik için ürün fiyatı bulunamadı",
+    "Event occurrence not found for this event": "Bu etkinlik için tarih bulunamadı",
+    "Only orders created through the checkout endpoint can be anonymized here": "Burada yalnızca ödeme uç noktası üzerinden oluşturulan siparişler anonimleştirilebilir"
 }

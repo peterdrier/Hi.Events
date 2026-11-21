@@ -15,6 +15,8 @@ class StripePaymentIntentRefundService
 {
     public const NOTIFY_BUYER_METADATA_KEY = 'notify_buyer';
 
+    public const IDEMPOTENCY_KEY_METADATA_KEY = 'idempotency_key';
+
     public function __construct(
         private readonly Repository $config,
     ) {}
@@ -30,6 +32,7 @@ class StripePaymentIntentRefundService
         StripePaymentDomainObject $payment,
         StripeClient $stripeClient,
         bool $notifyBuyer,
+        ?string $idempotencyKey = null,
     ): Refund {
         $params = [
             'payment_intent' => $payment->getPaymentIntentId(),
@@ -37,16 +40,44 @@ class StripePaymentIntentRefundService
         ];
 
         if ($notifyBuyer) {
-            $params['metadata'] = [self::NOTIFY_BUYER_METADATA_KEY => '1'];
+            $params['metadata'][self::NOTIFY_BUYER_METADATA_KEY] = '1';
+        }
+
+        if ($idempotencyKey !== null) {
+            $params['metadata'][self::IDEMPOTENCY_KEY_METADATA_KEY] = $idempotencyKey;
         }
 
         return $stripeClient->refunds->create(
             params: $params,
             opts: array_merge(
                 $this->getStripeAccountData($payment),
-                ['idempotency_key' => $this->idempotencyKey($payment, $amount, $alreadyRefunded, $failedRefundCount)],
+                ['idempotency_key' => $idempotencyKey === null
+                    ? $this->idempotencyKey($payment, $amount, $alreadyRefunded, $failedRefundCount)
+                    : sprintf('refund_%s_key_%s', $payment->getPaymentIntentId(), $idempotencyKey)],
             ),
         );
+    }
+
+    /**
+     * @throws ApiErrorException
+     */
+    public function findRefundUnderKey(
+        StripePaymentDomainObject $payment,
+        StripeClient $stripeClient,
+        string $idempotencyKey,
+    ): ?Refund {
+        $refunds = $stripeClient->refunds->all(
+            params: ['payment_intent' => $payment->getPaymentIntentId(), 'limit' => 100],
+            opts: $this->getStripeAccountData($payment),
+        );
+
+        foreach ($refunds->data as $refund) {
+            if (($refund->metadata[self::IDEMPOTENCY_KEY_METADATA_KEY] ?? null) === $idempotencyKey) {
+                return $refund;
+            }
+        }
+
+        return null;
     }
 
     private function idempotencyKey(

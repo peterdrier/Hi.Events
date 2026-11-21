@@ -14067,6 +14067,236 @@
         }
       }
     },
+    "/events/{eventId}/orders/checkout": {
+      "post": {
+        "operationId": "orders.createCheckoutOrderAction",
+        "description": "Creates a reserved order at the prices given, with the buyer and attendee details filled in, and returns\n`payment_link_url`, where the buyer pays. Each item is one unit; taxes and fees configured on a product are added\non top, so the request fails unless the products used carry none. A repeat with the same `external_reference`\nreturns the existing order instead of creating another. After paying, the buyer is sent to `return_url` when one\nis given; `send_buyer_emails: false` stops every email Hi.Events would send the buyer or attendees for the order.",
+        "summary": "Create checkout order",
+        "tags": [
+          "Orders"
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCheckoutOrderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "`OrderResource`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/OrderResource"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "errors"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationException"
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthenticationException"
+          },
+          "403": {
+            "description": "The authenticated user is not allowed to perform this action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested resource was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{eventId}/orders/{orderId}/anonymize": {
+      "post": {
+        "operationId": "orders.anonymizeCheckoutOrderAction",
+        "description": "For an order created through the checkout endpoint: scrubs the buyer's and every attendee's personal data the way\naccount deletion does (soft-deleted attendees included), the buyer's saved Stripe customer row, and the webhook\ndelivery logs that carried the order, keeping amounts, statuses and dates. Other orders get 409. Repeating the\ncall changes nothing further.",
+        "summary": "Anonymize order",
+        "tags": [
+          "Orders"
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`OrderResource`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/OrderResource"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "errors"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "errors"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthenticationException"
+          },
+          "403": {
+            "description": "The authenticated user is not allowed to perform this action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/events/{eventId}/orders/{orderId}/invoice": {
       "get": {
         "operationId": "orders.downloadOrderInvoiceAction",
@@ -28072,6 +28302,139 @@
         ],
         "title": "CreateAttendeeRequest"
       },
+      "CreateCheckoutOrderRequest": {
+        "type": "object",
+        "properties": {
+          "external_reference": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "first_name": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "last_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 50
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "de",
+              "fi",
+              "fr",
+              "it",
+              "nl",
+              "hu",
+              "es",
+              "pt",
+              "pt-br",
+              "zh-cn",
+              "se",
+              "zh-hk",
+              "vi",
+              "tr",
+              "pl",
+              "sk",
+              "el",
+              "ko",
+              "ja",
+              "cs"
+            ]
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "return_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "send_buyer_emails": {
+            "type": "boolean"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "product_id": {
+                  "type": "integer"
+                },
+                "product_price_id": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "event_occurrence_id": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "price": {
+                  "type": "number",
+                  "maximum": 999999999999
+                },
+                "attendee": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "first_name": {
+                      "type": "string",
+                      "maxLength": 255
+                    },
+                    "last_name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 255
+                    },
+                    "email": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "email"
+                    }
+                  }
+                }
+              },
+              "required": [
+                "product_id",
+                "price"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "external_reference",
+          "first_name",
+          "email",
+          "locale",
+          "expires_at",
+          "items"
+        ],
+        "title": "CreateCheckoutOrderRequest"
+      },
       "CreateEventImageRequest": {
         "type": "object",
         "properties": {
@@ -32358,6 +32721,33 @@
               "null"
             ]
           },
+          "payment_link_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "external_reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "return_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "send_buyer_emails": {
+            "type": "boolean"
+          },
+          "reserved_until": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "offline_payment_reported_at": {
             "type": [
               "string",
@@ -32450,6 +32840,9 @@
           "notes",
           "payment_provider",
           "payment_link_created_at",
+          "external_reference",
+          "return_url",
+          "send_buyer_emails",
           "offline_payment_reported_at",
           "offline_payment_note",
           "promo_code",
@@ -32564,6 +32957,12 @@
             ]
           },
           "payment_link_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "return_url": {
             "type": [
               "string",
               "null"
@@ -32777,6 +33176,7 @@
           "payment_link_created_at",
           "is_payment_link_payer",
           "offline_payment_reported_at",
+          "return_url",
           "promo_code",
           "taxes_and_fees_rollup"
         ],
@@ -35638,6 +36038,13 @@
           },
           "cancel_order": {
             "type": "boolean"
+          },
+          "idempotency_key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
           }
         },
         "required": [

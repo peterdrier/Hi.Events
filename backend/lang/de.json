@@ -1317,5 +1317,10 @@
     "The attendee could not be checked in.": "Der Teilnehmer konnte nicht eingecheckt werden.",
     "This was sent less than :minutes minutes ago. Wait before sending it again.": "Dies wurde vor weniger als :minutes Minuten gesendet. Warten Sie, bevor Sie es erneut senden.",
     "Only completed orders have a confirmation to resend.": "Nur abgeschlossene Bestellungen haben eine Bestätigung, die erneut gesendet werden kann.",
-    "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "An diese E-Mail-Adresse wurden in den letzten :minutes Minuten bereits :count E-Mails gesendet. Warten Sie, bevor Sie weitere senden."
+    "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "An diese E-Mail-Adresse wurden in den letzten :minutes Minuten bereits :count E-Mails gesendet. Warten Sie, bevor Sie weitere senden.",
+    "An order with this external reference already exists with a different total": "Eine Bestellung mit dieser externen Referenz existiert bereits mit einem anderen Gesamtbetrag",
+    "The order total does not match the requested prices. Remove taxes and fees from these products.": "Der Bestellbetrag stimmt nicht mit den angeforderten Preisen überein. Entfernen Sie Steuern und Gebühren von diesen Produkten.",
+    "Product price not found for this event": "Produktpreis für diese Veranstaltung nicht gefunden",
+    "Event occurrence not found for this event": "Termin für diese Veranstaltung nicht gefunden",
+    "Only orders created through the checkout endpoint can be anonymized here": "Hier können nur Bestellungen anonymisiert werden, die über den Checkout-Endpunkt erstellt wurden"
 }

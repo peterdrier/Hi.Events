@@ -91,6 +91,7 @@ abstract class BaseAction extends Controller
                 ->setStatusCode($statusCode);
         } else {
             $response = (new $resource($data))
+                ->additional(array_filter(['meta' => $meta]))
                 ->response()
                 ->setStatusCode($statusCode);
         }
