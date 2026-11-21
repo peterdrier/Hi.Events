@@ -4,6 +4,7 @@ namespace Tests\Unit\Services\Application\Handlers\Order\Payment\Stripe;
 
 use HiEvents\DomainObjects\Generated\OrderDomainObjectAbstract;
 use HiEvents\DomainObjects\OrderDomainObject;
+use HiEvents\DomainObjects\OrderRefundDomainObject;
 use HiEvents\DomainObjects\Status\OrderRefundStatus;
 use HiEvents\DomainObjects\StripePaymentDomainObject;
 use HiEvents\Exceptions\RefundNotPossibleException;
@@ -68,7 +69,7 @@ class RefundOrderHandlerTest extends TestCase
         $this->givenFailedRefunds(0);
         $this->givenStripeAcceptsTheRefund(Refund::constructFrom(['id' => 're_1', 'status' => 'pending']));
 
-        $this->assertSame($order, $this->handler->handle($this->givenDTO(notifyBuyer: true)));
+        $this->assertSame($order, $this->handler->handle($this->givenDTO(notifyBuyer: true))->order);
 
         $this->assertTrue($this->refundRequest['notifyBuyer']);
     }
@@ -90,7 +91,7 @@ class RefundOrderHandlerTest extends TestCase
         $this->givenFailedRefunds(0);
         $this->givenStripeAcceptsTheRefund();
 
-        $this->assertSame($order, $this->handler->handle($this->givenDTO(notifyBuyer: true)));
+        $this->assertSame($order, $this->handler->handle($this->givenDTO(notifyBuyer: true))->order);
 
         $this->assertFalse($this->refundRequest['notifyBuyer']);
     }
@@ -121,29 +122,49 @@ class RefundOrderHandlerTest extends TestCase
         $this->givenFailedRefunds(0);
         $this->givenStripeAcceptsTheRefund();
 
-        $this->handler->handle($this->givenDTO(idempotencyKey: 'humans-refund-1'));
+        $result = $this->handler->handle($this->givenDTO(idempotencyKey: 'humans-refund-1'));
 
         $this->assertSame('humans-refund-1', $this->refundRequest['idempotencyKey']);
+        $this->assertSame('re_1', $result->refund_id);
+        $this->assertSame('pending', $result->refund_status);
     }
 
-    public function test_a_refund_already_recorded_under_the_key_is_not_sent_again(): void
+    public function test_a_refund_recorded_under_the_key_is_answered_and_not_sent_again(): void
     {
-        $order = (new OrderDomainObject)
-            ->setId(self::ORDER_ID)
-            ->setEventId(self::EVENT_ID)
-            ->setCurrency('USD')
-            ->setStripePayment(new StripePaymentDomainObject);
-
-        $this->orderRepository->shouldReceive('loadRelation')->andReturnSelf();
-        $this->orderRepository->shouldReceive('findFirstWhere')->andReturn($order);
-        $this->orderRepository->shouldNotReceive('updateFromArray');
-        $this->orderRefundRepository->shouldReceive('countWhere')
-            ->once()
-            ->with(['order_id' => self::ORDER_ID, 'metadata->idempotency_key' => 'humans-refund-1', ['status', 'not in', [Refund::STATUS_FAILED, Refund::STATUS_CANCELED]]])
-            ->andReturn(1);
+        $order = $this->givenOrderWithoutUpdates();
+        $this->givenRecordedRefundWithKey('humans-refund-1', 're_9', Refund::STATUS_SUCCEEDED);
+        $this->refundService->shouldNotReceive('findRefundUnderKey');
         $this->refundService->shouldNotReceive('refundPayment');
 
-        $this->assertSame($order, $this->handler->handle($this->givenDTO(idempotencyKey: 'humans-refund-1')));
+        $result = $this->handler->handle($this->givenDTO(idempotencyKey: 'humans-refund-1'));
+
+        $this->assertSame($order, $result->order);
+        $this->assertSame('re_9', $result->refund_id);
+        $this->assertSame(Refund::STATUS_SUCCEEDED, $result->refund_status);
+    }
+
+    public function test_a_repeat_of_a_failed_refund_answers_failed_and_does_not_refund_again(): void
+    {
+        $this->givenOrderWithoutUpdates();
+        $this->givenRecordedRefundWithKey('humans-refund-1', 're_9', Refund::STATUS_FAILED);
+        $this->refundService->shouldNotReceive('refundPayment');
+
+        $result = $this->handler->handle($this->givenDTO(idempotencyKey: 'humans-refund-1'));
+
+        $this->assertSame('re_9', $result->refund_id);
+        $this->assertSame(Refund::STATUS_FAILED, $result->refund_status);
+    }
+
+    public function test_a_refund_stripe_failed_before_it_was_recorded_is_not_sent_again(): void
+    {
+        $this->givenOrderWithoutUpdates();
+        $this->givenNoRefundWithKey('humans-refund-1', Refund::constructFrom(['id' => 're_9', 'status' => Refund::STATUS_FAILED]));
+        $this->refundService->shouldNotReceive('refundPayment');
+
+        $result = $this->handler->handle($this->givenDTO(idempotencyKey: 'humans-refund-1'));
+
+        $this->assertSame('re_9', $result->refund_id);
+        $this->assertSame(Refund::STATUS_FAILED, $result->refund_status);
     }
 
     public function test_a_second_refund_is_refused_while_one_is_pending(): void
@@ -165,24 +186,23 @@ class RefundOrderHandlerTest extends TestCase
         $this->handler->handle($this->givenDTO());
     }
 
-    public function test_a_retry_of_the_pending_refund_under_its_key_is_not_sent_again(): void
+    public function test_a_repeat_of_the_pending_refund_under_its_key_answers_its_state_and_is_not_sent_again(): void
     {
         $order = $this->givenPendingOrder();
-        $this->givenNoRefundWithKey('humans-refund-1');
-        $this->refundService->shouldReceive('hasOpenRefundUnderKey')
-            ->once()
-            ->withArgs(fn ($payment, $client, string $key) => $key === 'humans-refund-1')
-            ->andReturn(true);
+        $this->givenNoRefundWithKey('humans-refund-1', Refund::constructFrom(['id' => 're_1', 'status' => Refund::STATUS_PENDING]));
         $this->refundService->shouldNotReceive('refundPayment');
 
-        $this->assertSame($order, $this->handler->handle($this->givenDTO(idempotencyKey: 'humans-refund-1')));
+        $result = $this->handler->handle($this->givenDTO(idempotencyKey: 'humans-refund-1'));
+
+        $this->assertSame($order, $result->order);
+        $this->assertSame('re_1', $result->refund_id);
+        $this->assertSame(Refund::STATUS_PENDING, $result->refund_status);
     }
 
     public function test_another_keyed_refund_is_refused_while_one_is_pending(): void
     {
         $this->givenPendingOrder();
         $this->givenNoRefundWithKey('humans-refund-2');
-        $this->refundService->shouldReceive('hasOpenRefundUnderKey')->once()->andReturn(false);
         $this->refundService->shouldNotReceive('refundPayment');
 
         $this->expectException(RefundNotPossibleException::class);
@@ -275,12 +295,39 @@ class RefundOrderHandlerTest extends TestCase
         return $order;
     }
 
-    private function givenNoRefundWithKey(string $key): void
+    private function givenOrderWithoutUpdates(): OrderDomainObject
     {
-        $this->orderRefundRepository->shouldReceive('countWhere')
+        $order = (new OrderDomainObject)
+            ->setId(self::ORDER_ID)
+            ->setEventId(self::EVENT_ID)
+            ->setCurrency('USD')
+            ->setStripePayment((new StripePaymentDomainObject)->setStripePlatform(null));
+
+        $this->orderRepository->shouldReceive('loadRelation')->andReturnSelf();
+        $this->orderRepository->shouldReceive('findFirstWhere')->andReturn($order);
+        $this->orderRepository->shouldNotReceive('updateFromArray');
+
+        return $order;
+    }
+
+    private function givenRecordedRefundWithKey(string $key, string $refundId, string $status): void
+    {
+        $this->orderRefundRepository->shouldReceive('findFirstWhere')
             ->once()
-            ->with(['order_id' => self::ORDER_ID, 'metadata->idempotency_key' => $key, ['status', 'not in', [Refund::STATUS_FAILED, Refund::STATUS_CANCELED]]])
-            ->andReturn(0);
+            ->with(['order_id' => self::ORDER_ID, 'metadata->idempotency_key' => $key])
+            ->andReturn((new OrderRefundDomainObject)->setRefundId($refundId)->setStatus($status));
+    }
+
+    private function givenNoRefundWithKey(string $key, ?Refund $inStripe = null): void
+    {
+        $this->orderRefundRepository->shouldReceive('findFirstWhere')
+            ->once()
+            ->with(['order_id' => self::ORDER_ID, 'metadata->idempotency_key' => $key])
+            ->andReturn(null);
+        $this->refundService->shouldReceive('findRefundUnderKey')
+            ->once()
+            ->withArgs(fn ($payment, $client, string $given) => $given === $key)
+            ->andReturn($inStripe);
     }
 
     private function givenFailedRefunds(int $count): void

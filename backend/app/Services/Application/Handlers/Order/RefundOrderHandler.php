@@ -3,10 +3,10 @@
 namespace HiEvents\Services\Application\Handlers\Order;
 
 use HiEvents\DomainObjects\Generated\OrderDomainObjectAbstract;
-use HiEvents\DomainObjects\OrderDomainObject;
 use HiEvents\Exceptions\RefundNotPossibleException;
 use HiEvents\Repository\Interfaces\OrderRepositoryInterface;
 use HiEvents\Services\Application\Handlers\Order\DTO\RefundOrderDTO;
+use HiEvents\Services\Application\Handlers\Order\DTO\RefundOrderResultDTO;
 use HiEvents\Services\Application\Handlers\Order\Payment\Offline\RefundOfflineOrderHandler;
 use HiEvents\Services\Application\Handlers\Order\Payment\Stripe\RefundOrderHandler as RefundStripeOrderHandler;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
@@ -24,7 +24,7 @@ class RefundOrderHandler
      * @throws RefundNotPossibleException
      * @throws Throwable
      */
-    public function handle(RefundOrderDTO $refundOrderDTO): OrderDomainObject
+    public function handle(RefundOrderDTO $refundOrderDTO): RefundOrderResultDTO
     {
         $order = $this->orderRepository->findFirstWhere([
             OrderDomainObjectAbstract::EVENT_ID => $refundOrderDTO->event_id,
@@ -39,7 +39,7 @@ class RefundOrderHandler
         }
 
         if ($order->isPaidOutsidePlatform()) {
-            return $this->refundOfflineOrderHandler->handle($refundOrderDTO);
+            return new RefundOrderResultDTO($this->refundOfflineOrderHandler->handle($refundOrderDTO));
         }
 
         return $this->refundStripeOrderHandler->handle($refundOrderDTO);

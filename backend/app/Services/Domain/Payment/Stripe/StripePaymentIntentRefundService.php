@@ -53,7 +53,7 @@ class StripePaymentIntentRefundService
                 $this->getStripeAccountData($payment),
                 ['idempotency_key' => $idempotencyKey === null
                     ? $this->idempotencyKey($payment, $amount, $alreadyRefunded, $failedRefundCount)
-                    : sprintf('refund_%s_key_%s_failed_%d', $payment->getPaymentIntentId(), $idempotencyKey, $failedRefundCount)],
+                    : sprintf('refund_%s_key_%s', $payment->getPaymentIntentId(), $idempotencyKey)],
             ),
         );
     }
@@ -61,24 +61,23 @@ class StripePaymentIntentRefundService
     /**
      * @throws ApiErrorException
      */
-    public function hasOpenRefundUnderKey(
+    public function findRefundUnderKey(
         StripePaymentDomainObject $payment,
         StripeClient $stripeClient,
         string $idempotencyKey,
-    ): bool {
+    ): ?Refund {
         $refunds = $stripeClient->refunds->all(
             params: ['payment_intent' => $payment->getPaymentIntentId(), 'limit' => 100],
             opts: $this->getStripeAccountData($payment),
         );
 
         foreach ($refunds->data as $refund) {
-            if (($refund->metadata[self::IDEMPOTENCY_KEY_METADATA_KEY] ?? null) === $idempotencyKey
-                && in_array($refund->status, [Refund::STATUS_PENDING, Refund::STATUS_REQUIRES_ACTION, Refund::STATUS_SUCCEEDED], true)) {
-                return true;
+            if (($refund->metadata[self::IDEMPOTENCY_KEY_METADATA_KEY] ?? null) === $idempotencyKey) {
+                return $refund;
             }
         }
 
-        return false;
+        return null;
     }
 
     private function idempotencyKey(

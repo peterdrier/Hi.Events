@@ -82,12 +82,10 @@ class StripePaymentIntentRefundServiceTest extends TestCase
     public function test_a_caller_key_replaces_the_derived_idempotency_key_and_travels_as_metadata(): void
     {
         $this->refund(amount: 12.50, alreadyRefunded: 20.0, failedRefundCount: 0, idempotencyKey: 'humans-refund-1');
-        $this->refund(amount: 12.50, alreadyRefunded: 32.50, failedRefundCount: 0, idempotencyKey: 'humans-refund-1');
-        $this->refund(amount: 12.50, alreadyRefunded: 20.0, failedRefundCount: 1, idempotencyKey: 'humans-refund-1');
+        $this->refund(amount: 12.50, alreadyRefunded: 32.50, failedRefundCount: 1, idempotencyKey: 'humans-refund-1');
 
-        $this->assertSame('refund_pi_test_abc123_key_humans-refund-1_failed_0', $this->requests[0]['opts']['idempotency_key']);
+        $this->assertSame('refund_pi_test_abc123_key_humans-refund-1', $this->requests[0]['opts']['idempotency_key']);
         $this->assertSame($this->requests[0]['opts']['idempotency_key'], $this->requests[1]['opts']['idempotency_key']);
-        $this->assertNotSame($this->requests[0]['opts']['idempotency_key'], $this->requests[2]['opts']['idempotency_key']);
         $this->assertSame(
             [StripePaymentIntentRefundService::IDEMPOTENCY_KEY_METADATA_KEY => 'humans-refund-1'],
             $this->requests[0]['params']['metadata'],
@@ -101,7 +99,7 @@ class StripePaymentIntentRefundServiceTest extends TestCase
         $this->assertSame('acct_test', $this->requests[0]['opts']['stripe_account']);
     }
 
-    public function test_an_open_refund_is_found_by_its_key_and_a_failed_one_is_not(): void
+    public function test_a_refund_is_found_by_its_key_whatever_its_state(): void
     {
         $refunds = Mockery::mock(RefundService::class);
         $refunds->shouldReceive('all')
@@ -117,9 +115,9 @@ class StripePaymentIntentRefundServiceTest extends TestCase
         $service = new StripePaymentIntentRefundService(new Repository(['app' => ['saas_mode_enabled' => false]]));
         $payment = (new StripePaymentDomainObject)->setPaymentIntentId('pi_test_abc123');
 
-        $this->assertTrue($service->hasOpenRefundUnderKey($payment, $stripeClient, 'humans-refund-1'));
-        $this->assertFalse($service->hasOpenRefundUnderKey($payment, $stripeClient, 'humans-refund-2'));
-        $this->assertFalse($service->hasOpenRefundUnderKey($payment, $stripeClient, 'humans-refund-3'));
+        $this->assertSame('re_2', $service->findRefundUnderKey($payment, $stripeClient, 'humans-refund-1')?->id);
+        $this->assertSame('re_1', $service->findRefundUnderKey($payment, $stripeClient, 'humans-refund-2')?->id);
+        $this->assertNull($service->findRefundUnderKey($payment, $stripeClient, 'humans-refund-3'));
     }
 
     private function refund(

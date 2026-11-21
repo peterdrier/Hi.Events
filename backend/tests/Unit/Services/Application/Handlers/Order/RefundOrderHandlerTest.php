@@ -7,6 +7,7 @@ use HiEvents\DomainObjects\Generated\OrderDomainObjectAbstract;
 use HiEvents\DomainObjects\OrderDomainObject;
 use HiEvents\Repository\Interfaces\OrderRepositoryInterface;
 use HiEvents\Services\Application\Handlers\Order\DTO\RefundOrderDTO;
+use HiEvents\Services\Application\Handlers\Order\DTO\RefundOrderResultDTO;
 use HiEvents\Services\Application\Handlers\Order\Payment\Offline\RefundOfflineOrderHandler;
 use HiEvents\Services\Application\Handlers\Order\Payment\Stripe\RefundOrderHandler as RefundStripeOrderHandler;
 use HiEvents\Services\Application\Handlers\Order\RefundOrderHandler;
@@ -53,7 +54,7 @@ class RefundOrderHandlerTest extends TestCase
         $this->refundOfflineOrderHandler->shouldReceive('handle')->once()->with($dto)->andReturn($refundedOrder);
         $this->refundStripeOrderHandler->shouldNotReceive('handle');
 
-        $this->assertSame($refundedOrder, $this->handler->handle($dto));
+        $this->assertSame($refundedOrder, $this->handler->handle($dto)->order);
     }
 
     public function test_a_stripe_order_is_refunded_by_the_stripe_handler(): void
@@ -62,10 +63,10 @@ class RefundOrderHandlerTest extends TestCase
         $refundedOrder = new OrderDomainObject;
 
         $dto = $this->givenDTO();
-        $this->refundStripeOrderHandler->shouldReceive('handle')->once()->with($dto)->andReturn($refundedOrder);
+        $this->refundStripeOrderHandler->shouldReceive('handle')->once()->with($dto)->andReturn(new RefundOrderResultDTO($refundedOrder));
         $this->refundOfflineOrderHandler->shouldNotReceive('handle');
 
-        $this->assertSame($refundedOrder, $this->handler->handle($dto));
+        $this->assertSame($refundedOrder, $this->handler->handle($dto)->order);
     }
 
     public function test_a_manually_created_order_is_refunded_by_the_offline_handler(): void
@@ -77,7 +78,7 @@ class RefundOrderHandlerTest extends TestCase
         $this->refundOfflineOrderHandler->shouldReceive('handle')->once()->with($dto)->andReturn($refundedOrder);
         $this->refundStripeOrderHandler->shouldNotReceive('handle');
 
-        $this->assertSame($refundedOrder, $this->handler->handle($dto));
+        $this->assertSame($refundedOrder, $this->handler->handle($dto)->order);
     }
 
     public function test_a_missing_order_throws_a_not_found_exception(): void

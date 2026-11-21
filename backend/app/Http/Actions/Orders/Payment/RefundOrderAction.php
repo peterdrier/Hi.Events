@@ -30,7 +30,7 @@ class RefundOrderAction extends BaseAction
         $this->isActionAuthorized($eventId, EventDomainObject::class);
 
         try {
-            $order = $this->refundOrderHandler->handle(
+            $result = $this->refundOrderHandler->handle(
                 refundOrderDTO: RefundOrderDTO::fromArray(array_merge($request->validated(), [
                     'event_id' => $eventId,
                     'order_id' => $orderId,
@@ -44,6 +44,12 @@ class RefundOrderAction extends BaseAction
             ]);
         }
 
-        return $this->resourceResponse(OrderResource::class, $order);
+        return $this->resourceResponse(
+            resource: OrderResource::class,
+            data: $result->order,
+            meta: $result->refund_id === null ? [] : [
+                'refund' => ['id' => $result->refund_id, 'status' => $result->refund_status],
+            ],
+        );
     }
 }
