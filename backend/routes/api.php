@@ -286,6 +286,7 @@ use HiEvents\Http\Actions\OAuth\IssueOAuthTokenAction;
 use HiEvents\Http\Actions\OAuth\RegisterOAuthClientAction;
 use HiEvents\Http\Actions\OAuth\RevokeOAuthTokenAction;
 use HiEvents\Http\Actions\Orders\CancelOrderAction;
+use HiEvents\Http\Actions\Orders\CreateCheckoutOrderAction;
 use HiEvents\Http\Actions\Orders\DownloadOrderInvoiceAction;
 use HiEvents\Http\Actions\Orders\EditOrderAction;
 use HiEvents\Http\Actions\Orders\ExportOrdersAction;
@@ -717,6 +718,7 @@ $router->middleware(['auth:api,sanctum'])->group(
         $router->post('/events/{event_id}/orders/{order_id}/cancel', CancelOrderAction::class);
         $router->post('/events/{event_id}/orders/{order_id}/mark-as-paid', MarkOrderAsPaidAction::class);
         $router->post('/events/{event_id}/orders/export', ExportOrdersAction::class);
+        $router->post('/events/{event_id}/orders/checkout', CreateCheckoutOrderAction::class);
         $router->get('/events/{event_id}/orders/{order_id}/invoice', DownloadOrderInvoiceAction::class);
 
         // Questions

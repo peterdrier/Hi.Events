@@ -78,6 +78,21 @@ class StripePaymentIntentRefundServiceTest extends TestCase
         $this->assertArrayNotHasKey('metadata', $this->requests[0]['params']);
     }
 
+    public function test_a_caller_key_replaces_the_derived_idempotency_key_and_travels_as_metadata(): void
+    {
+        $this->refund(amount: 12.50, alreadyRefunded: 20.0, failedRefundCount: 0, idempotencyKey: 'humans-refund-1');
+        $this->refund(amount: 12.50, alreadyRefunded: 32.50, failedRefundCount: 0, idempotencyKey: 'humans-refund-1');
+        $this->refund(amount: 12.50, alreadyRefunded: 20.0, failedRefundCount: 1, idempotencyKey: 'humans-refund-1');
+
+        $this->assertSame('refund_pi_test_abc123_key_humans-refund-1_failed_0', $this->requests[0]['opts']['idempotency_key']);
+        $this->assertSame($this->requests[0]['opts']['idempotency_key'], $this->requests[1]['opts']['idempotency_key']);
+        $this->assertNotSame($this->requests[0]['opts']['idempotency_key'], $this->requests[2]['opts']['idempotency_key']);
+        $this->assertSame(
+            [StripePaymentIntentRefundService::IDEMPOTENCY_KEY_METADATA_KEY => 'humans-refund-1'],
+            $this->requests[0]['params']['metadata'],
+        );
+    }
+
     public function test_the_refund_is_created_on_the_connected_account_in_saas_mode(): void
     {
         $this->refund(amount: 12.50, alreadyRefunded: 0.0, failedRefundCount: 0, saasMode: true);
@@ -91,6 +106,7 @@ class StripePaymentIntentRefundServiceTest extends TestCase
         int $failedRefundCount,
         bool $notifyBuyer = false,
         bool $saasMode = false,
+        ?string $idempotencyKey = null,
     ): Refund {
         $payment = (new StripePaymentDomainObject)
             ->setId(1)
@@ -120,6 +136,7 @@ class StripePaymentIntentRefundServiceTest extends TestCase
             payment: $payment,
             stripeClient: $stripeClient,
             notifyBuyer: $notifyBuyer,
+            idempotencyKey: $idempotencyKey,
         );
     }
 }

@@ -114,6 +114,38 @@ class RefundOrderHandlerTest extends TestCase
         $this->assertSame(1, $this->refundRequest['failedRefundCount']);
     }
 
+    public function test_the_caller_idempotency_key_is_passed_to_stripe(): void
+    {
+        $this->givenOrderIsFound(email: null);
+        $this->givenNoRefundWithKey('humans-refund-1');
+        $this->givenFailedRefunds(0);
+        $this->givenStripeAcceptsTheRefund();
+
+        $this->handler->handle($this->givenDTO(idempotencyKey: 'humans-refund-1'));
+
+        $this->assertSame('humans-refund-1', $this->refundRequest['idempotencyKey']);
+    }
+
+    public function test_a_refund_already_recorded_under_the_key_is_not_sent_again(): void
+    {
+        $order = (new OrderDomainObject)
+            ->setId(self::ORDER_ID)
+            ->setEventId(self::EVENT_ID)
+            ->setCurrency('USD')
+            ->setStripePayment(new StripePaymentDomainObject);
+
+        $this->orderRepository->shouldReceive('loadRelation')->andReturnSelf();
+        $this->orderRepository->shouldReceive('findFirstWhere')->andReturn($order);
+        $this->orderRepository->shouldNotReceive('updateFromArray');
+        $this->orderRefundRepository->shouldReceive('countWhere')
+            ->once()
+            ->with(['order_id' => self::ORDER_ID, 'metadata->idempotency_key' => 'humans-refund-1'])
+            ->andReturn(1);
+        $this->refundService->shouldNotReceive('refundPayment');
+
+        $this->assertSame($order, $this->handler->handle($this->givenDTO(idempotencyKey: 'humans-refund-1')));
+    }
+
     public function test_a_second_refund_is_refused_while_one_is_pending(): void
     {
         $order = (new OrderDomainObject)
@@ -153,7 +185,7 @@ class RefundOrderHandlerTest extends TestCase
         $this->assertSame(['mark:'.OrderRefundStatus::REFUND_PENDING->name, 'stripe-refund'], $calls);
     }
 
-    private function givenDTO(bool $notifyBuyer = false, float $amount = 50.0): RefundOrderDTO
+    private function givenDTO(bool $notifyBuyer = false, float $amount = 50.0, ?string $idempotencyKey = null): RefundOrderDTO
     {
         return new RefundOrderDTO(
             event_id: self::EVENT_ID,
@@ -161,6 +193,7 @@ class RefundOrderHandlerTest extends TestCase
             amount: $amount,
             notify_buyer: $notifyBuyer,
             cancel_order: false,
+            idempotency_key: $idempotencyKey,
         );
     }
 
@@ -201,6 +234,14 @@ class RefundOrderHandlerTest extends TestCase
         return $order;
     }
 
+    private function givenNoRefundWithKey(string $key): void
+    {
+        $this->orderRefundRepository->shouldReceive('countWhere')
+            ->once()
+            ->with(['order_id' => self::ORDER_ID, 'metadata->idempotency_key' => $key])
+            ->andReturn(0);
+    }
+
     private function givenFailedRefunds(int $count): void
     {
         $this->orderRefundRepository->shouldReceive('countWhere')
@@ -223,8 +264,9 @@ class RefundOrderHandlerTest extends TestCase
                 StripePaymentDomainObject $payment,
                 StripeClient $stripeClient,
                 bool $notifyBuyer,
+                ?string $idempotencyKey = null,
             ) use ($refund) {
-                $this->refundRequest = compact('amount', 'alreadyRefunded', 'failedRefundCount', 'notifyBuyer');
+                $this->refundRequest = compact('amount', 'alreadyRefunded', 'failedRefundCount', 'notifyBuyer', 'idempotencyKey');
 
                 return $refund ?? Refund::constructFrom(['id' => 're_1', 'status' => 'pending']);
             });

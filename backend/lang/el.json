@@ -1317,5 +1317,8 @@
     "The attendee could not be checked in.": "Δεν ήταν δυνατό το check-in του συμμετέχοντα.",
     "This was sent less than :minutes minutes ago. Wait before sending it again.": "Αυτό στάλθηκε πριν από λιγότερο από :minutes λεπτά. Περιμένετε πριν το στείλετε ξανά.",
     "Only completed orders have a confirmation to resend.": "Μόνο οι ολοκληρωμένες παραγγελίες έχουν επιβεβαίωση για επαναποστολή.",
-    "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "Σε αυτή τη διεύθυνση email έχουν ήδη σταλεί :count email τα τελευταία :minutes λεπτά. Περιμένετε πριν στείλετε περισσότερα."
+    "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "Σε αυτή τη διεύθυνση email έχουν ήδη σταλεί :count email τα τελευταία :minutes λεπτά. Περιμένετε πριν στείλετε περισσότερα.",
+    "An order with this external reference already exists with a different total": "Υπάρχει ήδη παραγγελία με αυτή την εξωτερική αναφορά με διαφορετικό σύνολο",
+    "The order total does not match the requested prices. Remove taxes and fees from these products.": "Το σύνολο της παραγγελίας δεν αντιστοιχεί στις ζητούμενες τιμές. Αφαιρέστε φόρους και χρεώσεις από αυτά τα προϊόντα.",
+    "Product price not found for this event": "Η τιμή του προϊόντος δεν βρέθηκε για αυτή την εκδήλωση"
 }

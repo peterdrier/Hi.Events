@@ -1317,5 +1317,8 @@
     "The attendee could not be checked in.": "Le participant n’a pas pu être enregistré.",
     "This was sent less than :minutes minutes ago. Wait before sending it again.": "Ceci a été envoyé il y a moins de :minutes minutes. Attendez avant de le renvoyer.",
     "Only completed orders have a confirmation to resend.": "Seules les commandes terminées ont une confirmation à renvoyer.",
-    "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "Cette adresse e-mail a déjà reçu :count e-mails au cours des :minutes dernières minutes. Attendez avant d’en envoyer d’autres."
+    "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "Cette adresse e-mail a déjà reçu :count e-mails au cours des :minutes dernières minutes. Attendez avant d’en envoyer d’autres.",
+    "An order with this external reference already exists with a different total": "Une commande avec cette référence externe existe déjà avec un total différent",
+    "The order total does not match the requested prices. Remove taxes and fees from these products.": "Le total de la commande ne correspond pas aux prix demandés. Retirez les taxes et frais de ces produits.",
+    "Product price not found for this event": "Prix du produit introuvable pour cet événement"
 }

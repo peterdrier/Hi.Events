@@ -79,6 +79,18 @@ class RefundOrderHandler
         }
     }
 
+    private function wasAlreadyRefunded(OrderDomainObject $order, ?string $idempotencyKey): bool
+    {
+        if ($idempotencyKey === null) {
+            return false;
+        }
+
+        return $this->orderRefundRepository->countWhere([
+            'order_id' => $order->getId(),
+            'metadata->'.StripePaymentIntentRefundService::IDEMPOTENCY_KEY_METADATA_KEY => $idempotencyKey,
+        ]) > 0;
+    }
+
     private function markOrderRefundPending(OrderDomainObject $order): OrderDomainObject
     {
         return $this->orderRepository->updateFromArray(
@@ -110,6 +122,10 @@ class RefundOrderHandler
     {
         $order = $this->fetchOrder($refundOrderDTO->event_id, $refundOrderDTO->order_id);
 
+        if ($this->wasAlreadyRefunded($order, $refundOrderDTO->idempotency_key)) {
+            return $order;
+        }
+
         $amount = MoneyValue::fromFloat($refundOrderDTO->amount, $order->getCurrency());
 
         $this->validateRefundability($order);
@@ -131,6 +147,7 @@ class RefundOrderHandler
             payment: $order->getStripePayment(),
             stripeClient: $stripeClient,
             notifyBuyer: $refundOrderDTO->notify_buyer && $order->getEmail() !== null,
+            idempotencyKey: $refundOrderDTO->idempotency_key,
         );
 
         return $pendingOrder;

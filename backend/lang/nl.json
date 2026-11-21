@@ -1317,5 +1317,8 @@
     "The attendee could not be checked in.": "De deelnemer kon niet worden ingecheckt.",
     "This was sent less than :minutes minutes ago. Wait before sending it again.": "Dit is minder dan :minutes minuten geleden verzonden. Wacht voordat je het opnieuw verstuurt.",
     "Only completed orders have a confirmation to resend.": "Alleen voltooide bestellingen hebben een bevestiging om opnieuw te versturen.",
-    "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "Naar dit e-mailadres zijn in de afgelopen :minutes minuten al :count e-mails verstuurd. Wacht voordat je er meer verstuurt."
+    "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "Naar dit e-mailadres zijn in de afgelopen :minutes minuten al :count e-mails verstuurd. Wacht voordat je er meer verstuurt.",
+    "An order with this external reference already exists with a different total": "Er bestaat al een bestelling met deze externe referentie met een ander totaal",
+    "The order total does not match the requested prices. Remove taxes and fees from these products.": "Het totaal van de bestelling komt niet overeen met de gevraagde prijzen. Verwijder belastingen en kosten van deze producten.",
+    "Product price not found for this event": "Productprijs niet gevonden voor dit evenement"
 }

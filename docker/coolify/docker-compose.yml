@@ -1,0 +1,89 @@
+# Coolify deployment of this fork, built from source so the Humans checkout patch ships with it.
+# Coolify fills the SERVICE_* variables: SERVICE_FQDN_HIEVENTS_80 is the public URL it routes to port 80,
+# SERVICE_PASSWORD_* and SERVICE_BASE64_* are generated once and kept.
+services:
+  hievents:
+    build:
+      context: ../../
+      dockerfile: Dockerfile.all-in-one
+    restart: unless-stopped
+    environment:
+      - SERVICE_FQDN_HIEVENTS_80
+      - VITE_FRONTEND_URL=${SERVICE_FQDN_HIEVENTS}
+      - VITE_API_URL_CLIENT=${SERVICE_FQDN_HIEVENTS}/api
+      - VITE_API_URL_SERVER=http://localhost:80/api
+      - VITE_STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLIC_KEY:?}
+      - VITE_APP_NAME=${APP_NAME:-Nobodies Tickets}
+      - APP_KEY=base64:${SERVICE_BASE64_64_APPKEY}
+      - JWT_SECRET=${SERVICE_BASE64_64_JWT}
+      - APP_FRONTEND_URL=${SERVICE_FQDN_HIEVENTS}
+      - APP_CDN_URL=${SERVICE_FQDN_HIEVENTS}/storage
+      - APP_DISABLE_REGISTRATION=${APP_DISABLE_REGISTRATION:-true}
+      - APP_SAAS_MODE_ENABLED=false
+      - APP_TRUSTED_PROXIES=${APP_TRUSTED_PROXIES:-*}
+      - CORS_ALLOWED_ORIGINS=${SERVICE_FQDN_HIEVENTS}
+      - LOG_CHANNEL=stderr
+      - QUEUE_CONNECTION=redis
+      - WEBHOOK_QUEUE_NAME=webhook-queue
+      - FILESYSTEM_PUBLIC_DISK=public
+      - FILESYSTEM_PRIVATE_DISK=local
+      - MAIL_MAILER=${MAIL_MAILER:-log}
+      - MAIL_HOST=${MAIL_HOST:-}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USERNAME=${MAIL_USERNAME:-}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - MAIL_ENCRYPTION=${MAIL_ENCRYPTION:-tls}
+      - MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS:-tickets@example.org}
+      - MAIL_FROM_NAME=${MAIL_FROM_NAME:-Nobodies Tickets}
+      - DB_CONNECTION=pgsql
+      - DATABASE_URL=postgresql://hievents:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/hievents
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=
+      - REDIS_PORT=6379
+      - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY:?}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:?}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:?}
+    volumes:
+      - storage:/app/backend/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redisdata:/data
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hievents
+      POSTGRES_USER: hievents
+      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hievents -d hievents"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  storage:
+  pgdata:
+  redisdata:

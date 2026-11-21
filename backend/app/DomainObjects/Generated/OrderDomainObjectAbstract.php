@@ -55,6 +55,7 @@ abstract class OrderDomainObjectAbstract extends \HiEvents\DomainObjects\Abstrac
     final public const PAYMENT_LINK_CREATED_AT = 'payment_link_created_at';
     final public const OFFLINE_PAYMENT_REPORTED_AT = 'offline_payment_reported_at';
     final public const OFFLINE_PAYMENT_NOTE = 'offline_payment_note';
+    final public const EXTERNAL_REFERENCE = 'external_reference';
 
     protected int $id;
     protected int $event_id;
@@ -101,6 +102,7 @@ abstract class OrderDomainObjectAbstract extends \HiEvents\DomainObjects\Abstrac
     protected ?string $payment_link_created_at = null;
     protected ?string $offline_payment_reported_at = null;
     protected ?string $offline_payment_note = null;
+    protected ?string $external_reference = null;
 
     public function toArray(): array
     {
@@ -150,6 +152,7 @@ abstract class OrderDomainObjectAbstract extends \HiEvents\DomainObjects\Abstrac
                     'payment_link_created_at' => $this->payment_link_created_at ?? null,
                     'offline_payment_reported_at' => $this->offline_payment_reported_at ?? null,
                     'offline_payment_note' => $this->offline_payment_note ?? null,
+                    'external_reference' => $this->external_reference ?? null,
                 ];
     }
 
@@ -646,5 +649,16 @@ abstract class OrderDomainObjectAbstract extends \HiEvents\DomainObjects\Abstrac
     public function getOfflinePaymentNote(): ?string
     {
         return $this->offline_payment_note;
+    }
+
+    public function setExternalReference(?string $external_reference): self
+    {
+        $this->external_reference = $external_reference;
+        return $this;
+    }
+
+    public function getExternalReference(): ?string
+    {
+        return $this->external_reference;
     }
 }
