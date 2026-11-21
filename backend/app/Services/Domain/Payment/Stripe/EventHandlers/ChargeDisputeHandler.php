@@ -16,15 +16,19 @@ use HiEvents\Services\Infrastructure\Stripe\StripeClientFactory;
 use Illuminate\Database\DatabaseManager;
 use Psr\Log\LoggerInterface;
 use Stripe\Dispute;
+use Stripe\StripeClient;
 use Throwable;
 
 readonly class ChargeDisputeHandler
 {
+    private const STATUS_PREVENTED = 'prevented';
+
     private const STATUSES_HOLDING_NO_MONEY = [
         Dispute::STATUS_WON,
         Dispute::STATUS_WARNING_NEEDS_RESPONSE,
         Dispute::STATUS_WARNING_UNDER_REVIEW,
         Dispute::STATUS_WARNING_CLOSED,
+        self::STATUS_PREVENTED,
     ];
 
     public function __construct(
@@ -52,26 +56,24 @@ readonly class ChargeDisputeHandler
             return;
         }
 
-        $current = $this->retrieve($dispute->id, $stripePayment);
-
-        $changed = $this->databaseManager->transaction(function () use ($current, $stripePayment) {
+        $changed = $this->databaseManager->transaction(function () use ($dispute, $stripePayment) {
             $order = $this->orderRepository->findById($stripePayment->getOrderId());
             $this->transactionLockService->lockOrder($order->getShortId());
 
-            $this->stripePaymentsRepository->updateWhere(
-                attributes: [
-                    StripePaymentDomainObjectAbstract::DISPUTE_ID => $current->id,
-                    StripePaymentDomainObjectAbstract::DISPUTE_STATUS => $current->status,
-                    StripePaymentDomainObjectAbstract::DISPUTE_AMOUNT => $current->amount,
-                ],
-                where: [StripePaymentDomainObjectAbstract::ID => $stripePayment->getId()],
-            );
+            $disputedMinor = 0;
 
-            $disputedMinor = $this->stripePaymentsRepository
-                ->findWhere([StripePaymentDomainObjectAbstract::ORDER_ID => $order->getId()])
-                ->filter(fn (StripePaymentDomainObjectAbstract $payment) => $payment->getDisputeId() !== null
-                    && ! in_array($payment->getDisputeStatus(), self::STATUSES_HOLDING_NO_MONEY, true))
-                ->sum(fn (StripePaymentDomainObjectAbstract $payment) => (int) $payment->getDisputeAmount());
+            foreach ($this->stripePaymentsRepository->findWhere([StripePaymentDomainObjectAbstract::ORDER_ID => $order->getId()]) as $payment) {
+                $disputes = $this->listDisputes($payment);
+
+                $disputedMinor += array_sum(array_map(
+                    static fn (Dispute $each) => in_array($each->status, self::STATUSES_HOLDING_NO_MONEY, true) ? 0 : (int) $each->amount,
+                    $disputes,
+                ));
+
+                if ($payment->getId() === $stripePayment->getId()) {
+                    $this->recordOnPayment($payment, $this->current($dispute, $disputes, $payment));
+                }
+            }
 
             $totalDisputed = Money::ofMinor($disputedMinor, $order->getCurrency())->getAmount()->toFloat();
 
@@ -85,8 +87,7 @@ readonly class ChargeDisputeHandler
 
             $this->logger->warning('Stripe dispute changed the amount held back on an order', [
                 'order_id' => $order->getId(),
-                'dispute_id' => $current->id,
-                'dispute_status' => $current->status,
+                'dispute_id' => $dispute->id,
                 'total_disputed' => $totalDisputed,
             ]);
 
@@ -102,6 +103,32 @@ readonly class ChargeDisputeHandler
                 type: DomainEventType::ORDER_UPDATED,
                 orderId: $stripePayment->getOrderId(),
             ),
+        );
+    }
+
+    /**
+     * @param  Dispute[]  $disputes
+     */
+    private function current(Dispute $dispute, array $disputes, StripePaymentDomainObject $payment): Dispute
+    {
+        foreach ($disputes as $each) {
+            if ($each->id === $dispute->id) {
+                return $each;
+            }
+        }
+
+        return $this->client($payment)->disputes->retrieve($dispute->id, [], $this->options($payment));
+    }
+
+    private function recordOnPayment(StripePaymentDomainObject $payment, Dispute $current): void
+    {
+        $this->stripePaymentsRepository->updateWhere(
+            attributes: [
+                StripePaymentDomainObjectAbstract::DISPUTE_ID => $current->id,
+                StripePaymentDomainObjectAbstract::DISPUTE_STATUS => $current->status,
+                StripePaymentDomainObjectAbstract::DISPUTE_AMOUNT => $current->amount,
+            ],
+            where: [StripePaymentDomainObjectAbstract::ID => $payment->getId()],
         );
     }
 
@@ -126,17 +153,26 @@ readonly class ChargeDisputeHandler
         ]);
     }
 
-    private function retrieve(string $disputeId, StripePaymentDomainObject $stripePayment): Dispute
+    /**
+     * @return Dispute[]
+     */
+    private function listDisputes(StripePaymentDomainObject $payment): array
     {
-        return $this->stripeClientFactory
-            ->createForPlatform($stripePayment->getStripePlatformEnum())
-            ->disputes
-            ->retrieve(
-                $disputeId,
-                [],
-                $stripePayment->getConnectedAccountId() !== null
-                    ? ['stripe_account' => $stripePayment->getConnectedAccountId()]
-                    : [],
-            );
+        return $this->client($payment)->disputes->all(
+            ['payment_intent' => $payment->getPaymentIntentId(), 'limit' => 100],
+            $this->options($payment),
+        )->data;
+    }
+
+    private function client(StripePaymentDomainObject $payment): StripeClient
+    {
+        return $this->stripeClientFactory->createForPlatform($payment->getStripePlatformEnum());
+    }
+
+    private function options(StripePaymentDomainObject $payment): array
+    {
+        return $payment->getConnectedAccountId() !== null
+            ? ['stripe_account' => $payment->getConnectedAccountId()]
+            : [];
     }
 }

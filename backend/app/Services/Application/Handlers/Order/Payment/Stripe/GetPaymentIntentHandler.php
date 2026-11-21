@@ -67,7 +67,7 @@ class GetPaymentIntentHandler
         }
 
         if ($paymentIntent->status === PaymentIntent::STATUS_PROCESSING && $order->getPaymentProcessingAt() === null) {
-            $this->paymentIntentProcessingHandler->handleEvent($paymentIntent);
+            $this->paymentIntentProcessingHandler->recordRetrievedPaymentIntent($paymentIntent);
         }
 
         return StripePaymentIntentPublicDTO::fromArray([
