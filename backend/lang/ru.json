@@ -1262,5 +1262,6 @@
     "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "На этот адрес уже отправлено :count писем за последние :minutes минут. Подождите, прежде чем отправлять ещё.",
     "An order with this external reference already exists with a different total": "Заказ с этой внешней ссылкой уже существует с другой суммой",
     "The order total does not match the requested prices. Remove taxes and fees from these products.": "Сумма заказа не совпадает с запрошенными ценами. Удалите налоги и сборы с этих товаров.",
-    "Product price not found for this event": "Цена товара для этого мероприятия не найдена"
+    "Product price not found for this event": "Цена товара для этого мероприятия не найдена",
+    "Event occurrence not found for this event": "Дата для этого мероприятия не найдена"
 }

@@ -1320,5 +1320,6 @@
     "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "Naar dit e-mailadres zijn in de afgelopen :minutes minuten al :count e-mails verstuurd. Wacht voordat je er meer verstuurt.",
     "An order with this external reference already exists with a different total": "Er bestaat al een bestelling met deze externe referentie met een ander totaal",
     "The order total does not match the requested prices. Remove taxes and fees from these products.": "Het totaal van de bestelling komt niet overeen met de gevraagde prijzen. Verwijder belastingen en kosten van deze producten.",
-    "Product price not found for this event": "Productprijs niet gevonden voor dit evenement"
+    "Product price not found for this event": "Productprijs niet gevonden voor dit evenement",
+    "Event occurrence not found for this event": "Datum niet gevonden voor dit evenement"
 }

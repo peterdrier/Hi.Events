@@ -1320,5 +1320,6 @@
     "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "該電郵地址在過去 :minutes 分鐘內已收到 :count 封電郵。請稍候再傳送。",
     "An order with this external reference already exists with a different total": "已存在使用此外部參考但總額不同的訂單",
     "The order total does not match the requested prices. Remove taxes and fees from these products.": "訂單總額與請求的價格不符。請移除這些產品的稅費。",
-    "Product price not found for this event": "找不到此活動的產品價格"
+    "Product price not found for this event": "找不到此活動的產品價格",
+    "Event occurrence not found for this event": "找不到此活動的場次"
 }

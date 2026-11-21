@@ -88,6 +88,7 @@ class RefundOrderHandler
         return $this->orderRefundRepository->countWhere([
             'order_id' => $order->getId(),
             'metadata->'.StripePaymentIntentRefundService::IDEMPOTENCY_KEY_METADATA_KEY => $idempotencyKey,
+            ['status', 'not in', [Refund::STATUS_FAILED, Refund::STATUS_CANCELED]],
         ]) > 0;
     }
 

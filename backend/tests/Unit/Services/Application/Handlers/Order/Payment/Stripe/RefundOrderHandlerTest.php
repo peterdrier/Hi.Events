@@ -139,7 +139,7 @@ class RefundOrderHandlerTest extends TestCase
         $this->orderRepository->shouldNotReceive('updateFromArray');
         $this->orderRefundRepository->shouldReceive('countWhere')
             ->once()
-            ->with(['order_id' => self::ORDER_ID, 'metadata->idempotency_key' => 'humans-refund-1'])
+            ->with(['order_id' => self::ORDER_ID, 'metadata->idempotency_key' => 'humans-refund-1', ['status', 'not in', [Refund::STATUS_FAILED, Refund::STATUS_CANCELED]]])
             ->andReturn(1);
         $this->refundService->shouldNotReceive('refundPayment');
 
@@ -279,7 +279,7 @@ class RefundOrderHandlerTest extends TestCase
     {
         $this->orderRefundRepository->shouldReceive('countWhere')
             ->once()
-            ->with(['order_id' => self::ORDER_ID, 'metadata->idempotency_key' => $key])
+            ->with(['order_id' => self::ORDER_ID, 'metadata->idempotency_key' => $key, ['status', 'not in', [Refund::STATUS_FAILED, Refund::STATUS_CANCELED]]])
             ->andReturn(0);
     }
 

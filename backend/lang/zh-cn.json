@@ -1320,5 +1320,6 @@
     "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "该邮箱地址在过去 :minutes 分钟内已收到 :count 封邮件。请稍候再发送。",
     "An order with this external reference already exists with a different total": "已存在使用此外部参考但总额不同的订单",
     "The order total does not match the requested prices. Remove taxes and fees from these products.": "订单总额与请求的价格不符。请移除这些产品的税费。",
-    "Product price not found for this event": "未找到此活动的产品价格"
+    "Product price not found for this event": "未找到此活动的产品价格",
+    "Event occurrence not found for this event": "未找到此活动的场次"
 }

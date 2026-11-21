@@ -1321,5 +1321,6 @@
     "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "A questo indirizzo email sono già state inviate :count email negli ultimi :minutes minuti. Attendi prima di inviarne altre.",
     "An order with this external reference already exists with a different total": "Esiste già un ordine con questo riferimento esterno con un totale diverso",
     "The order total does not match the requested prices. Remove taxes and fees from these products.": "Il totale dell'ordine non corrisponde ai prezzi richiesti. Rimuovi tasse e commissioni da questi prodotti.",
-    "Product price not found for this event": "Prezzo del prodotto non trovato per questo evento"
+    "Product price not found for this event": "Prezzo del prodotto non trovato per questo evento",
+    "Event occurrence not found for this event": "Data non trovata per questo evento"
 }

@@ -28282,14 +28282,14 @@
                   "properties": {
                     "first_name": {
                       "type": "string",
-                      "maxLength": 50
+                      "maxLength": 255
                     },
                     "last_name": {
                       "type": [
                         "string",
                         "null"
                       ],
-                      "maxLength": 50
+                      "maxLength": 255
                     },
                     "email": {
                       "type": [

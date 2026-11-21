@@ -25,6 +25,8 @@ class CreateCheckoutOrderActionTest extends TestCase
 
     private int $donationProductId;
 
+    private int $occurrenceId;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -32,6 +34,7 @@ class CreateCheckoutOrderActionTest extends TestCase
         $this->insertAccountAndOrganizer();
         $this->eventId = $this->insertEvent(EventType::SINGLE->name);
         DB::table('event_settings')->insert(['event_id' => $this->eventId, 'created_at' => now(), 'updated_at' => now()]);
+        $this->occurrenceId = $this->insertOccurrence();
         $this->ticketProductId = $this->insertProduct();
         $this->insertPrice($this->ticketProductId, null, price: 300.00);
         $this->donationProductId = $this->insertProduct(ProductType::GENERAL->name);
@@ -156,6 +159,42 @@ class CreateCheckoutOrderActionTest extends TestCase
         $this->postJson($this->url(), $body, $this->authHeaders())
             ->assertUnprocessable()
             ->assertJsonValidationErrors('items.0.product_price_id');
+    }
+
+    public function test_items_and_attendees_get_the_events_single_occurrence(): void
+    {
+        $orderId = $this->postJson($this->url(), $this->body(), $this->authHeaders())->assertCreated()->json('data.id');
+
+        $this->assertSame([$this->occurrenceId], DB::table('order_items')->where('order_id', $orderId)->pluck('event_occurrence_id')->unique()->values()->all());
+        $this->assertSame([$this->occurrenceId], DB::table('attendees')->where('order_id', $orderId)->pluck('event_occurrence_id')->all());
+    }
+
+    public function test_an_occurrence_of_another_event_is_refused(): void
+    {
+        $eventId = $this->eventId;
+        $this->eventId = $this->insertEvent(EventType::SINGLE->name);
+        $otherOccurrenceId = $this->insertOccurrence();
+        $this->eventId = $eventId;
+
+        $body = $this->body();
+        $body['items'][0]['event_occurrence_id'] = $otherOccurrenceId;
+
+        $this->postJson($this->url(), $body, $this->authHeaders())
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('items.0.event_occurrence_id');
+
+        $this->assertSame(0, DB::table('orders')->where('event_id', $eventId)->count());
+    }
+
+    public function test_an_attendee_name_longer_than_a_buyer_name_is_accepted(): void
+    {
+        $longName = 'María de los Ángeles Fernández de Córdoba y Martínez';
+        $body = $this->body();
+        $body['items'][0]['attendee']['first_name'] = $longName;
+
+        $orderId = $this->postJson($this->url(), $body, $this->authHeaders())->assertCreated()->json('data.id');
+
+        $this->assertSame($longName, DB::table('attendees')->where('order_id', $orderId)->value('first_name'));
     }
 
     public function test_it_requires_authentication(): void

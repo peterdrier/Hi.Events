@@ -8,8 +8,10 @@ use Carbon\Carbon;
 use HiEvents\DomainObjects\AttendeeDomainObject;
 use HiEvents\DomainObjects\Enums\ProductType;
 use HiEvents\DomainObjects\EventDomainObject;
+use HiEvents\DomainObjects\EventOccurrenceDomainObject;
 use HiEvents\DomainObjects\EventSettingDomainObject;
 use HiEvents\DomainObjects\Generated\AttendeeDomainObjectAbstract;
+use HiEvents\DomainObjects\Generated\EventOccurrenceDomainObjectAbstract;
 use HiEvents\DomainObjects\Generated\OrderDomainObjectAbstract;
 use HiEvents\DomainObjects\Generated\ProductDomainObjectAbstract;
 use HiEvents\DomainObjects\OrderDomainObject;
@@ -22,7 +24,9 @@ use HiEvents\Enterprise\Seating\Services\Domain\SeatedProductLookupService;
 use HiEvents\Exceptions\ResourceConflictException;
 use HiEvents\Helper\Currency;
 use HiEvents\Helper\IdHelper;
+use HiEvents\Repository\Eloquent\Value\OrderAndDirection;
 use HiEvents\Repository\Interfaces\AttendeeRepositoryInterface;
+use HiEvents\Repository\Interfaces\EventOccurrenceRepositoryInterface;
 use HiEvents\Repository\Interfaces\EventRepositoryInterface;
 use HiEvents\Repository\Interfaces\OrderRepositoryInterface;
 use HiEvents\Repository\Interfaces\ProductRepositoryInterface;
@@ -45,6 +49,7 @@ class CreateCheckoutOrderHandler
         private readonly EventRepositoryInterface $eventRepository,
         private readonly OrderRepositoryInterface $orderRepository,
         private readonly ProductRepositoryInterface $productRepository,
+        private readonly EventOccurrenceRepositoryInterface $occurrenceRepository,
         private readonly AttendeeRepositoryInterface $attendeeRepository,
         private readonly OrderManagementService $orderManagementService,
         private readonly OrderItemProcessingService $orderItemProcessingService,
@@ -107,6 +112,7 @@ class CreateCheckoutOrderHandler
             ->findById($data->event_id);
 
         $priceIds = $this->resolvePriceIds($event, $data);
+        $occurrenceIds = $this->resolveOccurrenceIds($event, $data);
 
         $order = $this->orderManagementService->createNewOrder(
             eventId: $event->getId(),
@@ -126,7 +132,7 @@ class CreateCheckoutOrderHandler
                     price_id: $priceIds[$index],
                     price: $item->price,
                 )]),
-                event_occurrence_id: $item->event_occurrence_id,
+                event_occurrence_id: $occurrenceIds[$index],
             )),
             event: $event,
             promoCode: null,
@@ -205,6 +211,38 @@ class CreateCheckoutOrderHandler
         }
 
         return $priceIds;
+    }
+
+    /**
+     * @return array<int, int>
+     *
+     * @throws ValidationException
+     */
+    private function resolveOccurrenceIds(EventDomainObject $event, CreateCheckoutOrderDTO $data): array
+    {
+        $occurrences = $this->occurrenceRepository->findWhere(
+            where: [EventOccurrenceDomainObjectAbstract::EVENT_ID => $event->getId()],
+            orderAndDirections: [new OrderAndDirection(EventOccurrenceDomainObjectAbstract::START_DATE, 'asc')],
+        );
+        $default = $event->isRecurring() ? null : $occurrences->first();
+
+        $occurrenceIds = [];
+
+        foreach ($data->items as $index => $item) {
+            $occurrence = $item->event_occurrence_id === null
+                ? $default
+                : $occurrences->first(fn (EventOccurrenceDomainObject $o) => $o->getId() === $item->event_occurrence_id);
+
+            if ($occurrence === null) {
+                throw ValidationException::withMessages([
+                    "items.$index.event_occurrence_id" => __('Event occurrence not found for this event'),
+                ]);
+            }
+
+            $occurrenceIds[$index] = $occurrence->getId();
+        }
+
+        return $occurrenceIds;
     }
 
     /**

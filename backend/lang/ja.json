@@ -1508,5 +1508,6 @@
     "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "このメールアドレスには過去 :minutes 分間にすでに :count 件のメールが送信されています。さらに送信する前にお待ちください。",
     "An order with this external reference already exists with a different total": "この外部参照の注文は、異なる合計金額ですでに存在します",
     "The order total does not match the requested prices. Remove taxes and fees from these products.": "注文合計がリクエストされた価格と一致しません。これらの商品から税金と手数料を削除してください。",
-    "Product price not found for this event": "このイベントの商品価格が見つかりません"
+    "Product price not found for this event": "このイベントの商品価格が見つかりません",
+    "Event occurrence not found for this event": "このイベントの開催日が見つかりません"
 }

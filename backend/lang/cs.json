@@ -1509,5 +1509,6 @@
     "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "Na tuto e-mailovou adresu už bylo za posledních :minutes minut odesláno :count e-mailů. Před dalším odesláním počkejte.",
     "An order with this external reference already exists with a different total": "Objednávka s tímto externím odkazem již existuje s jinou celkovou částkou",
     "The order total does not match the requested prices. Remove taxes and fees from these products.": "Celková částka objednávky neodpovídá požadovaným cenám. Odeberte z těchto produktů daně a poplatky.",
-    "Product price not found for this event": "Cena produktu pro tuto událost nebyla nalezena"
+    "Product price not found for this event": "Cena produktu pro tuto událost nebyla nalezena",
+    "Event occurrence not found for this event": "Termín pro tuto událost nebyl nalezen"
 }

@@ -1508,5 +1508,6 @@
     "That email address has already been sent :count emails in the last :minutes minutes. Wait before sending more.": "Tähän sähköpostiosoitteeseen on jo lähetetty :count viestiä viimeisen :minutes minuutin aikana. Odota ennen kuin lähetät lisää.",
     "An order with this external reference already exists with a different total": "Tällä ulkoisella viitteellä on jo tilaus, jonka summa on eri",
     "The order total does not match the requested prices. Remove taxes and fees from these products.": "Tilauksen summa ei vastaa pyydettyjä hintoja. Poista verot ja maksut näistä tuotteista.",
-    "Product price not found for this event": "Tuotteen hintaa ei löytynyt tälle tapahtumalle"
+    "Product price not found for this event": "Tuotteen hintaa ei löytynyt tälle tapahtumalle",
+    "Event occurrence not found for this event": "Tapahtumakertaa ei löytynyt tälle tapahtumalle"
 }

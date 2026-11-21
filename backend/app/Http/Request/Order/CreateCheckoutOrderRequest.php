@@ -10,6 +10,8 @@ use Illuminate\Validation\Rule;
 
 class CreateCheckoutOrderRequest extends BaseRequest
 {
+    private const ATTENDEE_NAME_MAX_LENGTH = 255;
+
     public function rules(): array
     {
         return [
@@ -27,8 +29,8 @@ class CreateCheckoutOrderRequest extends BaseRequest
             'items.*.event_occurrence_id' => ['nullable', 'integer'],
             'items.*.price' => ['required', ...RulesHelper::MONEY],
             'items.*.attendee' => ['nullable', 'array'],
-            'items.*.attendee.first_name' => ['required_with:items.*.attendee', 'string', 'max:'.PersonNameRule::MAX_LENGTH, new PersonNameRule],
-            'items.*.attendee.last_name' => ['nullable', 'string', 'max:'.PersonNameRule::MAX_LENGTH, new PersonNameRule],
+            'items.*.attendee.first_name' => ['required_with:items.*.attendee', 'string', 'max:'.self::ATTENDEE_NAME_MAX_LENGTH, new PersonNameRule],
+            'items.*.attendee.last_name' => ['nullable', 'string', 'max:'.self::ATTENDEE_NAME_MAX_LENGTH, new PersonNameRule],
             'items.*.attendee.email' => ['nullable', 'email'],
         ];
     }
