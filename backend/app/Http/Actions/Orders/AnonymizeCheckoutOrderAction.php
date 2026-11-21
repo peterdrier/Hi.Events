@@ -4,6 +4,7 @@ namespace HiEvents\Http\Actions\Orders;
 
 use HiEvents\DomainObjects\Enums\Permission;
 use HiEvents\DomainObjects\EventDomainObject;
+use HiEvents\Exceptions\ResourceConflictException;
 use HiEvents\Http\Actions\BaseAction;
 use HiEvents\Http\Attributes\RequiresPermission;
 use HiEvents\Resources\Order\OrderResource;
@@ -23,8 +24,10 @@ class AnonymizeCheckoutOrderAction extends BaseAction
     /**
      * Anonymize order
      *
-     * Replaces the buyer's and every attendee's name and email on the order with placeholders and clears the address
-     * and notes, keeping amounts, statuses and dates. Repeating the call changes nothing further.
+     * For an order created through the checkout endpoint: scrubs the buyer's and every attendee's personal data the way
+     * account deletion does (soft-deleted attendees included), the buyer's saved Stripe customer row, and the webhook
+     * delivery logs that carried the order, keeping amounts, statuses and dates. Other orders get 409. Repeating the
+     * call changes nothing further.
      *
      * @throws Throwable
      */
@@ -36,6 +39,8 @@ class AnonymizeCheckoutOrderAction extends BaseAction
             $order = $this->handler->handle($eventId, $orderId);
         } catch (ResourceNotFoundException $exception) {
             return $this->errorResponse($exception->getMessage(), Response::HTTP_NOT_FOUND);
+        } catch (ResourceConflictException $exception) {
+            return $this->errorResponse($exception->getMessage(), Response::HTTP_CONFLICT);
         }
 
         return $this->resourceResponse(OrderResource::class, $order);

@@ -1509,5 +1509,6 @@
     "An order with this external reference already exists with a different total": "Tällä ulkoisella viitteellä on jo tilaus, jonka summa on eri",
     "The order total does not match the requested prices. Remove taxes and fees from these products.": "Tilauksen summa ei vastaa pyydettyjä hintoja. Poista verot ja maksut näistä tuotteista.",
     "Product price not found for this event": "Tuotteen hintaa ei löytynyt tälle tapahtumalle",
-    "Event occurrence not found for this event": "Tapahtumakertaa ei löytynyt tälle tapahtumalle"
+    "Event occurrence not found for this event": "Tapahtumakertaa ei löytynyt tälle tapahtumalle",
+    "Only orders created through the checkout endpoint can be anonymized here": "Täällä voi anonymisoida vain kassarajapinnan kautta luotuja tilauksia"
 }

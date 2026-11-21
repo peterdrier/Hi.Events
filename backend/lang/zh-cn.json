@@ -1321,5 +1321,6 @@
     "An order with this external reference already exists with a different total": "已存在使用此外部参考但总额不同的订单",
     "The order total does not match the requested prices. Remove taxes and fees from these products.": "订单总额与请求的价格不符。请移除这些产品的税费。",
     "Product price not found for this event": "未找到此活动的产品价格",
-    "Event occurrence not found for this event": "未找到此活动的场次"
+    "Event occurrence not found for this event": "未找到此活动的场次",
+    "Only orders created through the checkout endpoint can be anonymized here": "此处只能匿名化通过结账端点创建的订单"
 }

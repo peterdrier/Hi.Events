@@ -1336,5 +1336,6 @@
     "An order with this external reference already exists with a different total": "Bu harici referansla farklı bir toplamı olan bir sipariş zaten var",
     "The order total does not match the requested prices. Remove taxes and fees from these products.": "Sipariş toplamı istenen fiyatlarla eşleşmiyor. Bu ürünlerden vergileri ve ücretleri kaldırın.",
     "Product price not found for this event": "Bu etkinlik için ürün fiyatı bulunamadı",
-    "Event occurrence not found for this event": "Bu etkinlik için tarih bulunamadı"
+    "Event occurrence not found for this event": "Bu etkinlik için tarih bulunamadı",
+    "Only orders created through the checkout endpoint can be anonymized here": "Burada yalnızca ödeme uç noktası üzerinden oluşturulan siparişler anonimleştirilebilir"
 }

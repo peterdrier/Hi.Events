@@ -1263,5 +1263,6 @@
     "An order with this external reference already exists with a different total": "Заказ с этой внешней ссылкой уже существует с другой суммой",
     "The order total does not match the requested prices. Remove taxes and fees from these products.": "Сумма заказа не совпадает с запрошенными ценами. Удалите налоги и сборы с этих товаров.",
     "Product price not found for this event": "Цена товара для этого мероприятия не найдена",
-    "Event occurrence not found for this event": "Дата для этого мероприятия не найдена"
+    "Event occurrence not found for this event": "Дата для этого мероприятия не найдена",
+    "Only orders created through the checkout endpoint can be anonymized here": "Здесь можно анонимизировать только заказы, созданные через конечную точку оформления"
 }

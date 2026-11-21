@@ -50,7 +50,7 @@ class AnonymizeCheckoutOrderActionTest extends TestCase
 
         $order = DB::table('orders')->find($this->orderId);
         $this->assertSame('Anonymized', $order->first_name);
-        $this->assertSame('', $order->last_name);
+        $this->assertSame('Anonymized', $order->last_name);
         $this->assertStringEndsWith('@anonymized.invalid', $order->email);
         $this->assertEquals(450.0, (float) $order->total_gross);
 
@@ -60,6 +60,52 @@ class AnonymizeCheckoutOrderActionTest extends TestCase
             $this->assertSame('Anonymized', $attendee->first_name);
             $this->assertStringEndsWith('@anonymized.invalid', $attendee->email);
         }
+    }
+
+    public function test_no_trace_of_the_buyer_is_left_in_stripe_customers_webhook_logs_or_deleted_attendees(): void
+    {
+        DB::table('attendees')->where('order_id', $this->orderId)->limit(1)->update(['deleted_at' => now()]);
+        DB::table('stripe_customers')->insert([
+            'name' => 'Ana Buyer', 'email' => 'ana@example.test', 'stripe_customer_id' => 'cus_test',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $webhookId = DB::table('webhooks')->insertGetId([
+            'url' => 'https://humans.example.test/HiEvents/Webhook', 'event_types' => '[]', 'secret' => 'whsec',
+            'user_id' => $this->userId, 'account_id' => $this->accountId, 'event_id' => $this->eventId,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $orderPayload = json_encode(['event_type' => 'order.created', 'payload' => ['id' => $this->orderId, 'email' => 'ana@example.test']]);
+        $attendeePayload = json_encode(['event_type' => 'attendee.created', 'payload' => ['id' => 9, 'order_id' => $this->orderId, 'first_name' => 'Luis Pérez']]);
+        $otherPayload = json_encode(['event_type' => 'order.created', 'payload' => ['id' => $this->orderId + 1000]]);
+        foreach ([$orderPayload, $attendeePayload, $otherPayload] as $payload) {
+            DB::table('webhook_logs')->insert([
+                'webhook_id' => $webhookId, 'payload' => $payload, 'event_type' => 'ORDER_CREATED',
+                'created_at' => now(), 'updated_at' => now(),
+            ]);
+        }
+
+        $this->postJson($this->url($this->orderId), [], $this->authHeaders())->assertOk();
+
+        foreach (['Ana', 'Buyer', 'ana@example.test', 'García', 'Pérez'] as $value) {
+            $this->assertSame(0, DB::table('orders')->where('id', $this->orderId)
+                ->where(fn ($q) => $q->where('first_name', 'like', "%$value%")->orWhere('last_name', 'like', "%$value%")->orWhere('email', 'like', "%$value%"))
+                ->count(), $value);
+            $this->assertSame(0, DB::table('attendees')->where('order_id', $this->orderId)
+                ->where(fn ($q) => $q->where('first_name', 'like', "%$value%")->orWhere('last_name', 'like', "%$value%")->orWhere('email', 'like', "%$value%"))
+                ->count(), $value);
+            $this->assertSame(0, DB::table('stripe_customers')->where('name', 'like', "%$value%")->orWhere('email', 'like', "%$value%")->count(), $value);
+            $this->assertSame(0, DB::table('webhook_logs')->where('payload', 'like', "%$value%")->count(), $value);
+        }
+        $this->assertSame(1, DB::table('webhook_logs')->where('webhook_id', $webhookId)->whereNull('deleted_at')->count(), 'Logs of other orders stay');
+    }
+
+    public function test_an_order_not_created_through_the_checkout_endpoint_is_refused(): void
+    {
+        DB::table('orders')->where('id', $this->orderId)->update(['external_reference' => null]);
+
+        $this->postJson($this->url($this->orderId), [], $this->authHeaders())->assertStatus(409);
+
+        $this->assertSame('Ana', DB::table('orders')->find($this->orderId)->first_name);
     }
 
     public function test_repeating_it_is_harmless(): void

@@ -1321,5 +1321,6 @@
     "An order with this external reference already exists with a different total": "Objednávka s týmto externým odkazom už existuje s inou celkovou sumou",
     "The order total does not match the requested prices. Remove taxes and fees from these products.": "Celková suma objednávky nezodpovedá požadovaným cenám. Odstráňte z týchto produktov dane a poplatky.",
     "Product price not found for this event": "Cena produktu pre toto podujatie sa nenašla",
-    "Event occurrence not found for this event": "Termín pre toto podujatie sa nenašiel"
+    "Event occurrence not found for this event": "Termín pre toto podujatie sa nenašiel",
+    "Only orders created through the checkout endpoint can be anonymized here": "Tu je možné anonymizovať iba objednávky vytvorené cez pokladničný koncový bod"
 }

@@ -1321,5 +1321,6 @@
     "An order with this external reference already exists with a different total": "En beställning med denna externa referens finns redan med en annan totalsumma",
     "The order total does not match the requested prices. Remove taxes and fees from these products.": "Beställningens totalsumma matchar inte de begärda priserna. Ta bort skatter och avgifter från dessa produkter.",
     "Product price not found for this event": "Produktpriset hittades inte för detta evenemang",
-    "Event occurrence not found for this event": "Tillfället hittades inte för detta evenemang"
+    "Event occurrence not found for this event": "Tillfället hittades inte för detta evenemang",
+    "Only orders created through the checkout endpoint can be anonymized here": "Här kan bara beställningar som skapats via kassans slutpunkt anonymiseras"
 }

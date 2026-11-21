@@ -1510,5 +1510,6 @@
     "An order with this external reference already exists with a different total": "이 외부 참조로 다른 총액의 주문이 이미 존재합니다",
     "The order total does not match the requested prices. Remove taxes and fees from these products.": "주문 총액이 요청한 가격과 일치하지 않습니다. 이 상품에서 세금과 수수료를 제거하세요.",
     "Product price not found for this event": "이 이벤트의 상품 가격을 찾을 수 없습니다",
-    "Event occurrence not found for this event": "이 이벤트의 일정을 찾을 수 없습니다"
+    "Event occurrence not found for this event": "이 이벤트의 일정을 찾을 수 없습니다",
+    "Only orders created through the checkout endpoint can be anonymized here": "여기서는 결제 엔드포인트로 생성된 주문만 익명화할 수 있습니다"
 }

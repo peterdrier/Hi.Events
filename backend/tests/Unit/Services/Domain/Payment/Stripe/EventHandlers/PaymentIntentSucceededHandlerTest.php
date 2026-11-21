@@ -403,7 +403,8 @@ class PaymentIntentSucceededHandlerTest extends TestCase
         $this->orderRepository->shouldReceive('loadRelation')->andReturnSelf();
         $this->orderRepository->shouldReceive('updateFromArray')
             ->once()
-            ->with(1, Mockery::on(fn (array $attributes) => $attributes['status'] === OrderStatus::COMPLETED->name))
+            ->with(1, Mockery::on(fn (array $attributes) => $attributes['status'] === OrderStatus::COMPLETED->name
+                && array_key_exists('statistics_decremented_at', $attributes) && $attributes['statistics_decremented_at'] === null))
             ->andThrow(new RuntimeException('completed'));
 
         try {

@@ -1326,5 +1326,6 @@
     "An order with this external reference already exists with a different total": "Ezzel a külső hivatkozással már létezik egy eltérő végösszegű rendelés",
     "The order total does not match the requested prices. Remove taxes and fees from these products.": "A rendelés végösszege nem egyezik a kért árakkal. Távolítsa el az adókat és díjakat ezekről a termékekről.",
     "Product price not found for this event": "A termék ára nem található ehhez az eseményhez",
-    "Event occurrence not found for this event": "Az időpont nem található ehhez az eseményhez"
+    "Event occurrence not found for this event": "Az időpont nem található ehhez az eseményhez",
+    "Only orders created through the checkout endpoint can be anonymized here": "Itt csak a fizetési végponton keresztül létrehozott rendelések anonimizálhatók"
 }

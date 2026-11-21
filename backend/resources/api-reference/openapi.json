@@ -14185,7 +14185,7 @@
     "/events/{eventId}/orders/{orderId}/anonymize": {
       "post": {
         "operationId": "orders.anonymizeCheckoutOrderAction",
-        "description": "Replaces the buyer's and every attendee's name and email on the order with placeholders and clears the address\nand notes, keeping amounts, statuses and dates. Repeating the call changes nothing further.",
+        "description": "For an order created through the checkout endpoint: scrubs the buyer's and every attendee's personal data the way\naccount deletion does (soft-deleted attendees included), the buyer's saved Stripe customer row, and the webhook\ndelivery logs that carried the order, keeping amounts, statuses and dates. Other orders get 409. Repeating the\ncall changes nothing further.",
         "summary": "Anonymize order",
         "tags": [
           "Orders"
@@ -14222,6 +14222,29 @@
                   },
                   "required": [
                     "data"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "errors"
                   ]
                 }
               }

@@ -217,6 +217,9 @@ class PaymentIntentSucceededHandler
                 OrderDomainObjectAbstract::PAYMENT_STATUS => OrderPaymentStatus::PAYMENT_RECEIVED->name,
                 OrderDomainObjectAbstract::STATUS => OrderStatus::COMPLETED->name,
                 OrderDomainObjectAbstract::PAYMENT_PROVIDER => PaymentProviders::STRIPE->value,
+                ...($this->isCheckoutOrder($stripePayment->getOrder())
+                    ? [OrderDomainObjectAbstract::STATISTICS_DECREMENTED_AT => null]
+                    : []),
             ]);
 
         if ($updatedOrder->getAffiliateId()) {

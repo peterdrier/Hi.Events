@@ -1322,5 +1322,6 @@
     "An order with this external reference already exists with a different total": "Esiste già un ordine con questo riferimento esterno con un totale diverso",
     "The order total does not match the requested prices. Remove taxes and fees from these products.": "Il totale dell'ordine non corrisponde ai prezzi richiesti. Rimuovi tasse e commissioni da questi prodotti.",
     "Product price not found for this event": "Prezzo del prodotto non trovato per questo evento",
-    "Event occurrence not found for this event": "Data non trovata per questo evento"
+    "Event occurrence not found for this event": "Data non trovata per questo evento",
+    "Only orders created through the checkout endpoint can be anonymized here": "Qui si possono anonimizzare solo gli ordini creati tramite l'endpoint di pagamento"
 }
