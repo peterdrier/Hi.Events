@@ -39,6 +39,7 @@ class CreateCheckoutOrderActionTest extends TestCase
         $this->insertPrice($this->ticketProductId, null, price: 300.00);
         $this->donationProductId = $this->insertProduct(ProductType::GENERAL->name);
         $this->insertPrice($this->donationProductId, null, price: 1.00);
+        DB::table('products')->whereIn('id', [$this->ticketProductId, $this->donationProductId])->update(['is_hidden' => true]);
     }
 
     public function test_it_creates_a_reserved_order_at_the_given_prices_with_names_and_a_payment_link(): void

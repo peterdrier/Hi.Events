@@ -19,8 +19,9 @@ Runs this fork, with the Humans checkout endpoint, as one Coolify Docker Compose
 1. Register the first user at `https://<domain>/auth/register` (set `APP_DISABLE_REGISTRATION=false` for that first
    deploy, then back to `true`), create an organizer and an event with currency EUR, and turn on Stripe payments.
 2. Create exactly two products with **no taxes or fees**: one of type Ticket and one of type General (donations).
-   Humans finds them by type, so the event must have no other product of either type. Any base price works; Humans
-   sets the price of every order.
+   Humans finds them by type, so the event must have no other product of either type. Mark both **hidden**: the event
+   has to be live for the pay page, and a visible product would sell on its public page outside Humans (Humans refuses
+   to check out on a visible one). Any base price works; Humans sets the price of every order.
 3. Settings → API keys: create a read-write key. In Humans set `HIEVENTS_API_KEY` to it, and
    `HiEvents:ApiUrl=https://<domain>/api`. The Hi.Events event id is then set as the backend event on the Humans
    event.
