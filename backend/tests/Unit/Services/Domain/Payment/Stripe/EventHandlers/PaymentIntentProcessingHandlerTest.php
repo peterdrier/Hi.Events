@@ -11,19 +11,26 @@ use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\PaymentIntentProcessin
 use HiEvents\Services\Infrastructure\DomainEvents\DomainEventDispatcherService;
 use HiEvents\Services\Infrastructure\DomainEvents\Enums\DomainEventType;
 use HiEvents\Services\Infrastructure\DomainEvents\Events\OrderEvent;
+use HiEvents\Services\Infrastructure\Stripe\StripeClientFactory;
 use Illuminate\Support\Carbon;
 use Mockery;
 use Mockery\MockInterface;
 use Stripe\PaymentIntent;
+use Stripe\Service\PaymentIntentService;
+use Stripe\StripeClient;
 use Tests\TestCase;
 
 class PaymentIntentProcessingHandlerTest extends TestCase
 {
+    private const UNPAID = [OrderDomainObjectAbstract::PAYMENT_STATUS, 'in', ['AWAITING_PAYMENT', 'PAYMENT_FAILED']];
+
     private OrderRepositoryInterface|MockInterface $orderRepository;
 
     private StripePaymentsRepositoryInterface|MockInterface $stripePaymentsRepository;
 
     private DomainEventDispatcherService|MockInterface $dispatcher;
+
+    private PaymentIntentService|MockInterface $paymentIntents;
 
     private PaymentIntentProcessingHandler $handler;
 
@@ -34,11 +41,18 @@ class PaymentIntentProcessingHandlerTest extends TestCase
         $this->orderRepository = Mockery::mock(OrderRepositoryInterface::class);
         $this->stripePaymentsRepository = Mockery::mock(StripePaymentsRepositoryInterface::class);
         $this->dispatcher = Mockery::mock(DomainEventDispatcherService::class);
+        $this->paymentIntents = Mockery::mock(PaymentIntentService::class);
+
+        $client = Mockery::mock(StripeClient::class);
+        $client->paymentIntents = $this->paymentIntents;
+        $factory = Mockery::mock(StripeClientFactory::class);
+        $factory->shouldReceive('createForPlatform')->andReturn($client);
 
         $this->handler = new PaymentIntentProcessingHandler(
             $this->orderRepository,
             $this->stripePaymentsRepository,
             $this->dispatcher,
+            $factory,
         );
     }
 
@@ -50,50 +64,123 @@ class PaymentIntentProcessingHandlerTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_marks_an_unpaid_order_as_processing_and_tells_webhooks(): void
+    public function test_marks_an_unpaid_order_as_processing_when_stripe_still_has_it_processing(): void
     {
         Carbon::setTestNow('2027-01-02 10:00:00');
-        $this->stripePaymentsRepository->shouldReceive('findFirstWhere')
-            ->andReturn((new StripePaymentDomainObject)->setOrderId(5)->setPaymentIntentId('pi_sepa'));
+        $this->paymentFound();
+        $this->stripeSays('processing');
 
         $this->orderRepository->shouldReceive('updateWhere')
             ->once()
             ->withArgs(function (array $attributes, array $where) {
                 return $attributes[OrderDomainObjectAbstract::PAYMENT_PROCESSING_AT]->equalTo(Carbon::parse('2027-01-02 10:00:00'))
                     && $attributes[OrderDomainObjectAbstract::PAYMENT_STATUS] === OrderPaymentStatus::AWAITING_PAYMENT->name
-                    && $where === [
-                        OrderDomainObjectAbstract::ID => 5,
-                        [OrderDomainObjectAbstract::PAYMENT_STATUS, 'in', [
-                            OrderPaymentStatus::AWAITING_PAYMENT->name,
-                            OrderPaymentStatus::PAYMENT_FAILED->name,
-                        ]],
-                    ];
+                    && $where === [OrderDomainObjectAbstract::ID => 5, self::UNPAID];
             })
             ->andReturn(1);
+        $this->expectOrderUpdated();
 
-        $this->dispatcher->shouldReceive('dispatch')
+        $this->handler->handleEvent($this->webhookPaymentIntent());
+    }
+
+    public function test_a_processing_event_that_arrives_after_the_payment_failed_does_not_revive_the_order(): void
+    {
+        $this->paymentFound();
+        $this->stripeSays('requires_payment_method');
+
+        $this->orderRepository->shouldReceive('updateWhere')
             ->once()
-            ->with(Mockery::on(fn (OrderEvent $event) => $event->type === DomainEventType::ORDER_UPDATED && $event->orderId === 5));
+            ->with(
+                [OrderDomainObjectAbstract::PAYMENT_PROCESSING_AT => null],
+                [
+                    OrderDomainObjectAbstract::ID => 5,
+                    [OrderDomainObjectAbstract::PAYMENT_PROCESSING_AT, 'not null', null],
+                    self::UNPAID,
+                ],
+            )
+            ->andReturn(0);
+        $this->dispatcher->shouldNotReceive('dispatch');
 
-        $this->handler->handleEvent(PaymentIntent::constructFrom(['id' => 'pi_sepa', 'status' => 'processing']));
+        $this->handler->handleEvent($this->webhookPaymentIntent());
+    }
+
+    public function test_an_order_still_marked_processing_after_the_payment_failed_is_cleared(): void
+    {
+        $this->paymentFound();
+        $this->stripeSays('requires_payment_method');
+
+        $this->orderRepository->shouldReceive('updateWhere')
+            ->once()
+            ->with([OrderDomainObjectAbstract::PAYMENT_PROCESSING_AT => null], Mockery::any())
+            ->andReturn(1);
+        $this->expectOrderUpdated();
+
+        $this->handler->handleEvent($this->webhookPaymentIntent());
+    }
+
+    public function test_a_payment_stripe_already_settled_is_left_to_the_success_handler(): void
+    {
+        $this->paymentFound();
+        $this->stripeSays('succeeded');
+        $this->orderRepository->shouldNotReceive('updateWhere');
+        $this->dispatcher->shouldNotReceive('dispatch');
+
+        $this->handler->handleEvent($this->webhookPaymentIntent());
     }
 
     public function test_a_paid_order_is_left_alone(): void
     {
-        $this->stripePaymentsRepository->shouldReceive('findFirstWhere')
-            ->andReturn((new StripePaymentDomainObject)->setOrderId(5)->setPaymentIntentId('pi_sepa'));
+        $this->paymentFound();
+        $this->stripeSays('processing');
         $this->orderRepository->shouldReceive('updateWhere')->once()->andReturn(0);
         $this->dispatcher->shouldNotReceive('dispatch');
 
-        $this->handler->handleEvent(PaymentIntent::constructFrom(['id' => 'pi_sepa', 'status' => 'processing']));
+        $this->handler->handleEvent($this->webhookPaymentIntent());
+    }
+
+    public function test_a_payment_intent_just_read_from_stripe_is_not_read_again(): void
+    {
+        $this->paymentFound();
+        $this->paymentIntents->shouldNotReceive('retrieve');
+        $this->orderRepository->shouldReceive('updateWhere')->once()->andReturn(1);
+        $this->expectOrderUpdated();
+
+        $this->handler->recordRetrievedPaymentIntent(PaymentIntent::constructFrom(['id' => 'pi_sepa', 'status' => 'processing']));
     }
 
     public function test_an_unknown_payment_intent_is_ignored(): void
     {
         $this->stripePaymentsRepository->shouldReceive('findFirstWhere')->andReturnNull();
+        $this->paymentIntents->shouldNotReceive('retrieve');
         $this->orderRepository->shouldNotReceive('updateWhere');
         $this->dispatcher->shouldNotReceive('dispatch');
 
         $this->handler->handleEvent(PaymentIntent::constructFrom(['id' => 'pi_other', 'status' => 'processing']));
+    }
+
+    private function paymentFound(): void
+    {
+        $this->stripePaymentsRepository->shouldReceive('findFirstWhere')
+            ->andReturn((new StripePaymentDomainObject)->setOrderId(5)->setPaymentIntentId('pi_sepa')->setConnectedAccountId('acct_1'));
+    }
+
+    private function stripeSays(string $status): void
+    {
+        $this->paymentIntents->shouldReceive('retrieve')
+            ->once()
+            ->with('pi_sepa', [], ['stripe_account' => 'acct_1'])
+            ->andReturn(PaymentIntent::constructFrom(['id' => 'pi_sepa', 'status' => $status]));
+    }
+
+    private function expectOrderUpdated(): void
+    {
+        $this->dispatcher->shouldReceive('dispatch')
+            ->once()
+            ->with(Mockery::on(fn (OrderEvent $event) => $event->type === DomainEventType::ORDER_UPDATED && $event->orderId === 5));
+    }
+
+    private function webhookPaymentIntent(): PaymentIntent
+    {
+        return PaymentIntent::constructFrom(['id' => 'pi_sepa', 'status' => 'processing']);
     }
 }
