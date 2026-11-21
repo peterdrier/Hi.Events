@@ -28,6 +28,7 @@ class OrderResource extends BaseResource
                 'total_tax' => $this->getTotalTax(),
                 'total_fee' => $this->getTotalFee(),
                 'total_refunded' => $this->getTotalRefunded(),
+                'total_disputed' => $this->getTotalDisputed(),
                 'taxes_and_fees_rollup' => $this->getTaxesAndFeesRollup(),
             ]),
             /** @var 'RESERVED'|'CANCELLED'|'COMPLETED'|'AWAITING_OFFLINE_PAYMENT'|'ABANDONED' */
@@ -59,6 +60,7 @@ class OrderResource extends BaseResource
             'notes' => $this->getNotes(),
             'payment_provider' => $this->getPaymentProvider(),
             'payment_link_created_at' => $this->getPaymentLinkCreatedAt(),
+            'payment_processing_at' => $this->getPaymentProcessingAt(),
             $this->mergeWhen($this->getPaymentLinkUrl() !== null && $this->isOrderReserved(), fn () => [
                 'payment_link_url' => $this->getPaymentLinkUrl(),
             ]),

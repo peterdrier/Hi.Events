@@ -60,6 +60,8 @@ export const PaymentReturn = () => {
                 trackEvent(AnalyticsEvents.PURCHASE_COMPLETED_PAID, { value: totalCents });
             }
             showOrderSummary();
+        } else if (paymentIntentQuery.data?.status === 'processing' && order?.return_url) {
+            window.location.assign(order.return_url);
         } else {
             // At this point we've tried multiple times to confirm the payment and failed.
             // This could be due to a network error on our end, or a problem with the payment provider (Stripe).

@@ -32549,6 +32549,9 @@
           "total_refunded": {
             "type": "number"
           },
+          "total_disputed": {
+            "type": "number"
+          },
           "taxes_and_fees_rollup": {
             "anyOf": [
               {
@@ -32721,6 +32724,12 @@
               "null"
             ]
           },
+          "payment_processing_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "payment_link_url": {
             "type": [
               "string",
@@ -32840,6 +32849,7 @@
           "notes",
           "payment_provider",
           "payment_link_created_at",
+          "payment_processing_at",
           "external_reference",
           "return_url",
           "send_buyer_emails",

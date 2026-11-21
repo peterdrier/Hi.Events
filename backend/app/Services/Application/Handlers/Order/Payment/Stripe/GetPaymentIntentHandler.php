@@ -8,10 +8,12 @@ use HiEvents\DomainObjects\StripePaymentDomainObject;
 use HiEvents\Repository\Eloquent\Value\Relationship;
 use HiEvents\Repository\Interfaces\OrderRepositoryInterface;
 use HiEvents\Services\Application\Handlers\Order\Payment\Stripe\DTO\StripePaymentIntentPublicDTO;
+use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\PaymentIntentProcessingHandler;
 use HiEvents\Services\Domain\Payment\Stripe\EventHandlers\PaymentIntentSucceededHandler;
 use HiEvents\Services\Infrastructure\Stripe\StripeClientFactory;
 use Psr\Log\LoggerInterface;
 use Stripe\Exception\ApiErrorException;
+use Stripe\PaymentIntent;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 
 class GetPaymentIntentHandler
@@ -21,6 +23,7 @@ class GetPaymentIntentHandler
         private readonly OrderRepositoryInterface $orderRepository,
         private readonly LoggerInterface $logger,
         private readonly PaymentIntentSucceededHandler $paymentIntentSucceededHandler,
+        private readonly PaymentIntentProcessingHandler $paymentIntentProcessingHandler,
     ) {}
 
     public function handle(int $eventId, string $orderShortId): StripePaymentIntentPublicDTO
@@ -61,6 +64,10 @@ class GetPaymentIntentHandler
         // This is a safety net to ensure the order is updated correctly.
         if ($paymentIntent->status === 'succeeded' && $order->getPaymentStatus() !== OrderPaymentStatus::PAYMENT_RECEIVED->name) {
             $this->paymentIntentSucceededHandler->handleEvent($paymentIntent);
+        }
+
+        if ($paymentIntent->status === PaymentIntent::STATUS_PROCESSING && $order->getPaymentProcessingAt() === null) {
+            $this->paymentIntentProcessingHandler->handleEvent($paymentIntent);
         }
 
         return StripePaymentIntentPublicDTO::fromArray([

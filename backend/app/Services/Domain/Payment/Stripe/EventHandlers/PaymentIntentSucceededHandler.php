@@ -217,6 +217,7 @@ class PaymentIntentSucceededHandler
                 OrderDomainObjectAbstract::PAYMENT_STATUS => OrderPaymentStatus::PAYMENT_RECEIVED->name,
                 OrderDomainObjectAbstract::STATUS => OrderStatus::COMPLETED->name,
                 OrderDomainObjectAbstract::PAYMENT_PROVIDER => PaymentProviders::STRIPE->value,
+                OrderDomainObjectAbstract::PAYMENT_PROCESSING_AT => null,
                 ...($this->isCheckoutOrder($stripePayment->getOrder())
                     ? [OrderDomainObjectAbstract::STATISTICS_DECREMENTED_AT => null]
                     : []),

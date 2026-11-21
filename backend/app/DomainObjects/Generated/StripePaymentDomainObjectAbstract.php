@@ -33,6 +33,9 @@ abstract class StripePaymentDomainObjectAbstract extends \HiEvents\DomainObjects
     final public const PAYOUT_EXCHANGE_RATE = 'payout_exchange_rate';
     final public const BALANCE_TRANSACTION_ID = 'balance_transaction_id';
     final public const APPLICATION_FEE_VAT_RATE = 'application_fee_vat_rate';
+    final public const DISPUTE_ID = 'dispute_id';
+    final public const DISPUTE_STATUS = 'dispute_status';
+    final public const DISPUTE_AMOUNT = 'dispute_amount';
 
     protected int $id;
     protected int $order_id;
@@ -57,6 +60,9 @@ abstract class StripePaymentDomainObjectAbstract extends \HiEvents\DomainObjects
     protected ?float $payout_exchange_rate = null;
     protected ?string $balance_transaction_id = null;
     protected ?float $application_fee_vat_rate = null;
+    protected ?string $dispute_id = null;
+    protected ?string $dispute_status = null;
+    protected ?int $dispute_amount = null;
 
     public function toArray(): array
     {
@@ -84,6 +90,9 @@ abstract class StripePaymentDomainObjectAbstract extends \HiEvents\DomainObjects
                     'payout_exchange_rate' => $this->payout_exchange_rate ?? null,
                     'balance_transaction_id' => $this->balance_transaction_id ?? null,
                     'application_fee_vat_rate' => $this->application_fee_vat_rate ?? null,
+                    'dispute_id' => $this->dispute_id ?? null,
+                    'dispute_status' => $this->dispute_status ?? null,
+                    'dispute_amount' => $this->dispute_amount ?? null,
                 ];
     }
 
@@ -338,5 +347,38 @@ abstract class StripePaymentDomainObjectAbstract extends \HiEvents\DomainObjects
     public function getApplicationFeeVatRate(): ?float
     {
         return $this->application_fee_vat_rate;
+    }
+
+    public function setDisputeId(?string $dispute_id): self
+    {
+        $this->dispute_id = $dispute_id;
+        return $this;
+    }
+
+    public function getDisputeId(): ?string
+    {
+        return $this->dispute_id;
+    }
+
+    public function setDisputeStatus(?string $dispute_status): self
+    {
+        $this->dispute_status = $dispute_status;
+        return $this;
+    }
+
+    public function getDisputeStatus(): ?string
+    {
+        return $this->dispute_status;
+    }
+
+    public function setDisputeAmount(?int $dispute_amount): self
+    {
+        $this->dispute_amount = $dispute_amount;
+        return $this;
+    }
+
+    public function getDisputeAmount(): ?int
+    {
+        return $this->dispute_amount;
     }
 }
