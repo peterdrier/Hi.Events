@@ -19,6 +19,8 @@ class CreateCheckoutOrderRequest extends BaseRequest
             'email' => ['required', 'email'],
             'locale' => ['required', Rule::in(Locale::getSupportedLocales())],
             'expires_at' => ['required', 'date', 'after:now'],
+            'return_url' => ['nullable', 'url:https,http', 'max:2048'],
+            'send_buyer_emails' => ['sometimes', 'boolean'],
             'items' => ['required', 'array', 'min:1', 'max:20'],
             'items.*.product_id' => ['required', 'integer'],
             'items.*.product_price_id' => ['nullable', 'integer'],

@@ -153,6 +153,8 @@ class CreateCheckoutOrderHandler
             OrderDomainObjectAbstract::PAYMENT_STATUS => OrderPaymentStatus::AWAITING_PAYMENT->name,
             OrderDomainObjectAbstract::RESERVED_UNTIL => Carbon::parse($data->expires_at)->utc()->startOfSecond()->toDateTimeString(),
             OrderDomainObjectAbstract::PAYMENT_LINK_CREATED_AT => Carbon::now('UTC')->startOfSecond()->toDateTimeString(),
+            OrderDomainObjectAbstract::RETURN_URL => $data->return_url,
+            OrderDomainObjectAbstract::SEND_BUYER_EMAILS => $data->send_buyer_emails,
         ]);
 
         $this->createAttendees($order, $data, $orderItems->map(fn (ProcessedOrderItemDTO $item) => $item->order_item)->values());

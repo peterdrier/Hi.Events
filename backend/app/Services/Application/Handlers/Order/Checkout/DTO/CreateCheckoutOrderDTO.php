@@ -18,5 +18,7 @@ class CreateCheckoutOrderDTO extends BaseDataObject
         /** @var CheckoutOrderItemDTO[] */
         #[DataCollectionOf(CheckoutOrderItemDTO::class)]
         public array $items,
+        public ?string $return_url = null,
+        public bool $send_buyer_emails = true,
     ) {}
 }

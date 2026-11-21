@@ -27,6 +27,14 @@ export const PaymentReturn = () => {
     const [cannotConfirmPayment, setCannotConfirmPayment] = useState(false);
     const hasTrackedPurchase = useRef(false);
 
+    const showOrderSummary = () => {
+        if (order?.return_url) {
+            window.location.assign(order.return_url);
+            return;
+        }
+        navigate(eventCheckoutPath(eventId, orderShortId, 'summary'));
+    };
+
     useEffect(
         () => {
             const timeout = setTimeout(() => {
@@ -51,7 +59,7 @@ export const PaymentReturn = () => {
                 const totalCents = Math.round((order.total_gross || 0) * 100);
                 trackEvent(AnalyticsEvents.PURCHASE_COMPLETED_PAID, { value: totalCents });
             }
-            navigate(eventCheckoutPath(eventId, orderShortId, 'summary'));
+            showOrderSummary();
         } else {
             // At this point we've tried multiple times to confirm the payment and failed.
             // This could be due to a network error on our end, or a problem with the payment provider (Stripe).
@@ -71,7 +79,7 @@ export const PaymentReturn = () => {
                 const totalCents = Math.round((order.total_gross || 0) * 100);
                 trackEvent(AnalyticsEvents.PURCHASE_COMPLETED_PAID, { value: totalCents });
             }
-            navigate(eventCheckoutPath(eventId, orderShortId, 'summary'));
+            showOrderSummary();
         }
         if (order?.payment_status === 'PAYMENT_FAILED' || (typeof window !== 'undefined' && window?.location.search.includes('failed'))) {
             navigate(eventCheckoutPath(eventId, orderShortId, 'payment') + '?payment_failed=true');

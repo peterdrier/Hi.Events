@@ -63,6 +63,8 @@ class OrderResource extends BaseResource
                 'payment_link_url' => $this->getPaymentLinkUrl(),
             ]),
             'external_reference' => $this->getExternalReference(),
+            'return_url' => $this->getReturnUrl(),
+            'send_buyer_emails' => $this->getSendBuyerEmails(),
             'reserved_until' => $this->when($this->isOrderReserved(), fn () => $this->getReservedUntil()),
             'offline_payment_reported_at' => $this->getOfflinePaymentReportedAt(),
             'offline_payment_note' => $this->getOfflinePaymentNote(),

@@ -165,7 +165,7 @@ class RefundOrderHandler
             failedRefundCount: $this->countFailedRefunds($order),
             payment: $order->getStripePayment(),
             stripeClient: $stripeClient,
-            notifyBuyer: $refundOrderDTO->notify_buyer && $order->getEmail() !== null,
+            notifyBuyer: $refundOrderDTO->notify_buyer && $order->getEmail() !== null && $order->getSendBuyerEmails(),
             idempotencyKey: $refundOrderDTO->idempotency_key,
         );
 

@@ -86,7 +86,7 @@ readonly class StripeRefundExpiredOrderService
             paymentIntentId: $paymentIntent->id,
         );
 
-        if (! $notifyBuyer || $order->getEmail() === null) {
+        if (! $notifyBuyer || $order->getEmail() === null || ! $order->getSendBuyerEmails()) {
             return $refundRecord;
         }
 

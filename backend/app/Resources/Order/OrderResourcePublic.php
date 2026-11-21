@@ -51,6 +51,7 @@ class OrderResourcePublic extends BaseResource
             $this->mergeWhen($this->getPaymentLinkUrl() !== null && ($this->isOrderReserved() || $this->isOrderAwaitingOfflinePayment()), fn () => [
                 'payment_link_url' => $this->getPaymentLinkUrl(),
             ]),
+            'return_url' => $this->getReturnUrl(),
             'promo_code' => $this->getPromoCode(),
             'taxes_and_fees_rollup' => $this->getTaxesAndFeesRollup(),
             'event' => $this->when(

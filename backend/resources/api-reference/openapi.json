@@ -14070,7 +14070,7 @@
     "/events/{eventId}/orders/checkout": {
       "post": {
         "operationId": "orders.createCheckoutOrderAction",
-        "description": "Creates a reserved order at the prices given, with the buyer and attendee details filled in, and returns\n`payment_link_url`, where the buyer pays. Each item is one unit; taxes and fees configured on a product are added\non top, so the request fails unless the products used carry none. A repeat with the same `external_reference`\nreturns the existing order instead of creating another.",
+        "description": "Creates a reserved order at the prices given, with the buyer and attendee details filled in, and returns\n`payment_link_url`, where the buyer pays. Each item is one unit; taxes and fees configured on a product are added\non top, so the request fails unless the products used carry none. A repeat with the same `external_reference`\nreturns the existing order instead of creating another. After paying, the buyer is sent to `return_url` when one\nis given; `send_buyer_emails: false` stops every email Hi.Events would send the buyer or attendees for the order.",
         "summary": "Create checkout order",
         "tags": [
           "Orders"
@@ -28239,6 +28239,17 @@
             "type": "string",
             "format": "date-time"
           },
+          "return_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "send_buyer_emails": {
+            "type": "boolean"
+          },
           "items": {
             "type": "array",
             "items": {
@@ -32607,6 +32618,15 @@
               "null"
             ]
           },
+          "return_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "send_buyer_emails": {
+            "type": "boolean"
+          },
           "reserved_until": {
             "type": [
               "string",
@@ -32706,6 +32726,8 @@
           "payment_provider",
           "payment_link_created_at",
           "external_reference",
+          "return_url",
+          "send_buyer_emails",
           "offline_payment_reported_at",
           "offline_payment_note",
           "promo_code",
@@ -32820,6 +32842,12 @@
             ]
           },
           "payment_link_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "return_url": {
             "type": [
               "string",
               "null"
@@ -33033,6 +33061,7 @@
           "payment_link_created_at",
           "is_payment_link_payer",
           "offline_payment_reported_at",
+          "return_url",
           "promo_code",
           "taxes_and_fees_rollup"
         ],

@@ -75,7 +75,7 @@ class OrderCancelService
 
     private function sendOrderCancelledEmail(OrderDomainObject $order): void
     {
-        if ($order->getEmail() === null) {
+        if ($order->getEmail() === null || ! $order->getSendBuyerEmails()) {
             return;
         }
 

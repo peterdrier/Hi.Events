@@ -27,7 +27,8 @@ class CreateCheckoutOrderAction extends BaseAction
      * Creates a reserved order at the prices given, with the buyer and attendee details filled in, and returns
      * `payment_link_url`, where the buyer pays. Each item is one unit; taxes and fees configured on a product are added
      * on top, so the request fails unless the products used carry none. A repeat with the same `external_reference`
-     * returns the existing order instead of creating another.
+     * returns the existing order instead of creating another. After paying, the buyer is sent to `return_url` when one
+     * is given; `send_buyer_emails: false` stops every email Hi.Events would send the buyer or attendees for the order.
      */
     public function __invoke(CreateCheckoutOrderRequest $request, int $eventId): JsonResponse
     {

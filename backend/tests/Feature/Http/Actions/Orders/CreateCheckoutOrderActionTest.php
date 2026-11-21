@@ -66,6 +66,36 @@ class CreateCheckoutOrderActionTest extends TestCase
         $this->assertSame(AttendeeStatus::AWAITING_PAYMENT->name, $attendees[0]->status);
     }
 
+    public function test_it_stores_the_return_url_and_whether_hi_events_emails_the_buyer(): void
+    {
+        $response = $this->postJson($this->url(), [
+            ...$this->body(),
+            'return_url' => 'https://humans.example.test/Tickets/Return/1',
+            'send_buyer_emails' => false,
+        ], $this->authHeaders())
+            ->assertCreated()
+            ->assertJsonPath('data.return_url', 'https://humans.example.test/Tickets/Return/1')
+            ->assertJsonPath('data.send_buyer_emails', false);
+
+        $order = app(OrderRepositoryInterface::class)->findById($response->json('data.id'));
+        $this->assertFalse($order->getSendBuyerEmails());
+    }
+
+    public function test_buyer_emails_stay_on_unless_turned_off(): void
+    {
+        $this->postJson($this->url(), $this->body(), $this->authHeaders())
+            ->assertCreated()
+            ->assertJsonPath('data.return_url', null)
+            ->assertJsonPath('data.send_buyer_emails', true);
+    }
+
+    public function test_a_return_url_that_is_not_a_web_address_is_refused(): void
+    {
+        $this->postJson($this->url(), [...$this->body(), 'return_url' => 'javascript:alert(1)'], $this->authHeaders())
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('return_url');
+    }
+
     public function test_a_repeat_with_the_same_reference_returns_the_same_order(): void
     {
         $first = $this->postJson($this->url(), $this->body(), $this->authHeaders())->assertCreated();

@@ -88,10 +88,13 @@ class SendOrderDetailsService
 
         if ($order->isOrderCompleted() || $order->isOrderAwaitingOfflinePayment()) {
             $this->sendOrderSummaryEmails($order, $event);
-            $this->sendAttendeeTicketEmails($order, $event);
+
+            if ($order->getSendBuyerEmails()) {
+                $this->sendAttendeeTicketEmails($order, $event);
+            }
         }
 
-        if ($order->isOrderFailed() && $order->getEmail() !== null && ! $order->isBoxOfficeOrder()) {
+        if ($order->isOrderFailed() && $order->getEmail() !== null && ! $order->isBoxOfficeOrder() && $order->getSendBuyerEmails()) {
             $this->mailer
                 ->to($order->getEmail())
                 ->locale($order->getLocale())
@@ -146,13 +149,15 @@ class SendOrderDetailsService
 
     private function sendOrderSummaryEmails(OrderDomainObject $order, EventDomainObject $event): void
     {
-        $this->sendCustomerOrderSummary(
-            order: $order,
-            event: $event,
-            organizer: $event->getOrganizer(),
-            eventSettings: $event->getEventSettings(),
-            invoice: $order->getLatestInvoice(),
-        );
+        if ($order->getSendBuyerEmails()) {
+            $this->sendCustomerOrderSummary(
+                order: $order,
+                event: $event,
+                organizer: $event->getOrganizer(),
+                eventSettings: $event->getEventSettings(),
+                invoice: $order->getLatestInvoice(),
+            );
+        }
 
         if ($order->getIsManuallyCreated() || $order->isBoxOfficeOrder()) {
             return;
