@@ -169,6 +169,16 @@ class CreateCheckoutOrderActionTest extends TestCase
         $this->assertSame([$this->occurrenceId], DB::table('attendees')->where('order_id', $orderId)->pluck('event_occurrence_id')->all());
     }
 
+    public function test_an_explicit_occurrence_of_the_event_is_accepted(): void
+    {
+        $body = $this->body();
+        $body['items'][0]['event_occurrence_id'] = $this->occurrenceId;
+
+        $orderId = $this->postJson($this->url(), $body, $this->authHeaders())->assertCreated()->json('data.id');
+
+        $this->assertSame([$this->occurrenceId], DB::table('attendees')->where('order_id', $orderId)->pluck('event_occurrence_id')->all());
+    }
+
     public function test_an_occurrence_of_another_event_is_refused(): void
     {
         $eventId = $this->eventId;
